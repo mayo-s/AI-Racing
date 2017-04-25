@@ -2,6 +2,8 @@ package s0553863;
 
 import java.awt.Point;
 
+import org.lwjgl.util.vector.Vector2f;
+
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
@@ -24,55 +26,63 @@ public class LosersInc extends AI {
 
 	@Override
 	public DriverAction update(boolean arg0) {
-
+		
+		Point currentCheckpoint = info.getCurrentCheckpoint();
+		
 		float myCurrX = info.getX();
 		float myCurrY = info.getY();
 		float myCurrOrientation = info.getOrientation();
-
-		Point currentCheckpoint = info.getCurrentCheckpoint();
+		float currAngularVelocity = info.getAngularVelocity();
+//		Vector2f currVelocity = info.getVelocity();
 
 		float directionX = (float) (currentCheckpoint.getX() - myCurrX);
 		float directionY = (float) (currentCheckpoint.getY() - myCurrY);
 		float orientation2CP = (float) Math.atan2(directionY, directionX);
 		float angleBetweenOrientations = Math.abs(orientation2CP - myCurrOrientation);
-
 		float smoothTurnSpeed;
+		// Winkel zwischen Orientierungen < Toleranz
+		//  Bereits angekommen – Fertig!
 		float throttle = 1;
 		float steering = 0;
 
+		// • Winkel zw. Orientierungen < Abbremswinkel
+		//  Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max. Drehgeschwindigkeit / Abbremswinkel
 		if (angleBetweenOrientations >= 0.1f && angleBetweenOrientations <= 0.4f) {
 			smoothTurnSpeed = ((orientation2CP - myCurrOrientation) * maxAngularVelocity / angleBetweenOrientations);
-			throttle = 0.1f;
+			
+			if(currAngularVelocity < 0.5f) throttle = 0.1f;
+			if(currAngularVelocity > 0.7f) throttle = -0.5f;
 			steering = -1 * smoothTurnSpeed;
 		}
 		else if (angleBetweenOrientations >= 5.8f && angleBetweenOrientations <= 6.2f) {
 			smoothTurnSpeed = ((orientation2CP - myCurrOrientation) * maxAngularVelocity / angleBetweenOrientations);
-			throttle = 0.1f;
+
+			if(currAngularVelocity < 0.5f) throttle = 0.1f;
+			if(currAngularVelocity > 0.7f) throttle = -0.5f;
 			steering = smoothTurnSpeed;
 		}
+		//  Sonst: Wunschdrehgeschw. = max. Drehgeschw.
 		else if(angleBetweenOrientations > 0.4 && angleBetweenOrientations <= Math.PI){
-			smoothTurnSpeed = ((orientation2CP - myCurrOrientation) * maxAngularVelocity / angleBetweenOrientations);
+//			throttle = (maxAngularVelocity - currAngularVelocity)/10;
 			throttle = 1;
 			steering = -1 * maxAngularVelocity;	
 		}
 		else if(angleBetweenOrientations > Math.PI && angleBetweenOrientations < 5.8f){
-			smoothTurnSpeed = ((orientation2CP - myCurrOrientation) * maxAngularVelocity / angleBetweenOrientations);
 			throttle = 1;
 			steering = maxAngularVelocity;
 		}
+
+		debugInfo(throttle, steering, angleBetweenOrientations);
 		
+		return new DriverAction(throttle, steering);
+	}
 
-		// Winkel zwischen Orientierungen < Toleranz
-		//  Bereits angekommen – Fertig!
-		// • Winkel zw. Orientierungen < Abbremswinkel
-		//  Wunschdrehgeschw. = (Zielorient. – Startorient.)
-		// ∙ max. Drehgeschwindigkeit / Abbremswinkel
-		//  Sonst: Wunschdrehgeschw. = max. Drehgeschw.
-
-
+	
+	
+	private void debugInfo(float throttle, float steering, float angleBetweenOrientations) {
 		System.out.println("Throttle: " + throttle + " Steering: " + steering + " Angle between Orientations: "
 				+ angleBetweenOrientations);
-		return new DriverAction(throttle, steering);
+		
 	}
 
 	// • Beschleunigung = (Wunschdrehgeschw.
