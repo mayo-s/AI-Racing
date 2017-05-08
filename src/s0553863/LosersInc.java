@@ -46,40 +46,37 @@ public class LosersInc extends AI {
 		
 		// Winkel zwischen Orientierungen < Toleranz
 		//  Bereits angekommen – Fertig!
-		float wishTurnSpeed = 0;
-		float throttle = 1f;
-		float steering = 0;
+		float wishAngularVelocity = 0;
+		float throttle = 1.5f;
 
 		// • Winkel zw. Orientierungen < Abbremswinkel
 		//  Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max. Drehgeschwindigkeit / Abbremswinkel
 		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= 0.4f) {
-			wishTurnSpeed = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
-			
-			
+			throttle = 0.7f;
+			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
+	
 		}
 
 		//  Sonst: Wunschdrehgeschw. = max. Drehgeschw.
 		else if(Math.abs(angleBetweenOrientations) > 0.4){
 //			throttle = (maxAngularVelocity - currAngularVelocity)/10;
 			throttle = 1;
-			wishTurnSpeed = maxAngularVelocity;	
+			wishAngularVelocity = Math.signum(angleBetweenOrientations)*maxAngularVelocity;	
 		}
 
-		// • DrehBeschleunigung = (Wunschdrehgeschw.
-		// – aktuelle Drehgeschwindigkeit) / Wunschzeit
+		// • DrehBeschleunigung = (Wunschdrehgeschw. – aktuelle Drehgeschwindigkeit) / Wunschzeit
+		float steering = (wishAngularVelocity - currAngularVelocity) / 2;
 		
-		steering = (wishTurnSpeed - currAngularVelocity) / 3;
-		
-		debugInfo(throttle, steering, angleBetweenOrientations, wishTurnSpeed);
+		//debugInfo(throttle, steering, angleBetweenOrientations, wishAngularVelocity);
 		
 		return new DriverAction(throttle, steering);
 	}
 
 	
 	
-	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float smooothTurnSpeed) {
+	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float wishAngularVelocity) {
 		System.out.println("Throttle: " + throttle + " Steering: " + steering + " Angle between Orientations: "
-				+ angleBetweenOrientations + " smoothTurnSpeed: " + smooothTurnSpeed);
+				+ angleBetweenOrientations + " wishAngularVelocity: " + wishAngularVelocity);
 		
 		
 	}
