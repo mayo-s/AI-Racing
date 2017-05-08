@@ -38,43 +38,50 @@ public class LosersInc extends AI {
 		float angleBetweenOrientations = orientation2CP - myCurrOrientation;
 		float tolerance = 0.01f;
 		float distance2CP = (float) Math.sqrt(Math.pow(directionX, 2) + Math.pow(directionY, 2));
-		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
+		float wishAngularVelocity = setWishAngularVelocity(angleBetweenOrientations, tolerance);
 
 		if (angleBetweenOrientations > Math.PI)
 			angleBetweenOrientations -= 2 * Math.PI;
 		if (angleBetweenOrientations < -Math.PI)
 			angleBetweenOrientations += 2 * Math.PI;
 
+		float throttle = setThrottle(angleBetweenOrientations, tolerance, distance2CP);
+		float steering = setSteering(wishAngularVelocity, currAngularVelocity);
+		// debugInfo(throttle, steering, angleBetweenOrientations,
+		// wishAngularVelocity, distance2CP, currVelocity);
+
+		return new DriverAction(throttle, steering);
+	}
+
+	private float setThrottle(float angleBetweenOrientations, float tolerance, float distance2CP) {
 		// Winkel zwischen Orientierungen < Toleranz
 		// Bereits angekommen – Fertig!
-		float wishAngularVelocity = 0;
 		float throttle = maxVelocity;
 
 		// Winkel zw. Orientierungen < Abbremswinkel
-		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.
-		// Drehgeschwindigkeit / Abbremswinkel
-		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= 0.4f) {
-			throttle = 1f;
-			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
+		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.Drehgeschwindigkeit / Abbremswinkel
+
+		if(distance2CP < 100) throttle = approachCP(distance2CP);
+		else{
+			if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= 0.4f) {
+				throttle = 1f;
+			}
+			
+			// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
+			else if (Math.abs(angleBetweenOrientations) > 0.4) {
+				throttle = maxAngularVelocity;
+			}
+			
 		}
+		
+		return throttle;
+	}
 
-		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
-		else if (Math.abs(angleBetweenOrientations) > 0.4) {
-			throttle = 1;
-			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
-		}
-
-		// DrehBeschleunigung = (Wunschdrehgeschw. – aktuelle
-		// Drehgeschwindigkeit) / Wunschzeit
-		float steering = (wishAngularVelocity - currAngularVelocity) / 2.5f;
-
+	private float approachCP(float distance2CP) {
+		float throttle = maxVelocity;
+		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 		// Abstand(Start, Ziel) < Zielradius
-		// if(distance2CP < 10) {
-		// throttle = 0;
-		// steering = 1;
-		// }
-		//// Bereits angekommen – Fertig!
-		// else
+		// Bereits angekommen – Fertig!
 		if (distance2CP < 40 && currVelocity > 10) {
 			throttle = 0;
 		}
@@ -91,10 +98,27 @@ public class LosersInc extends AI {
 			throttle = (float) ((28 - currVelocity) / 2.5);
 		}
 
-		// debugInfo(throttle, steering, angleBetweenOrientations,
-		// wishAngularVelocity, distance2CP, currVelocity);
+		return throttle;
+	}
 
-		return new DriverAction(throttle, steering);
+	private float setWishAngularVelocity(float ABO, float tolerance) {
+		float wishAngularVelocity = 0;
+		if (Math.abs(ABO) >= tolerance && Math.abs(ABO) <= 0.4f) {
+			wishAngularVelocity = (ABO * maxAngularVelocity / 0.4f);
+		}
+
+		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
+		else if (Math.abs(ABO) > 0.4) {
+			wishAngularVelocity = Math.signum(ABO) * maxAngularVelocity;
+		}
+		return wishAngularVelocity;
+	}
+
+	private float setSteering(float wishAngularVelocity, float currAngularVelocity) {
+		// DrehBeschleunigung = (Wunschdrehgeschw. – aktuelle
+		// Drehgeschwindigkeit) / Wunschzeit
+		float steering = (wishAngularVelocity - currAngularVelocity) / 2.5f;
+		return steering;
 	}
 
 	private void avoidObstacle(float currX, float currY) {
