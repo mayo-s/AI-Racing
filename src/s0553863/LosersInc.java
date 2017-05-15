@@ -37,7 +37,7 @@ public class LosersInc extends AI {
 		float directionY = (float) (currentCheckpoint.getY() - myCurrY);
 		float orientation2CP = (float) Math.atan2(directionY, directionX);
 		float angleBetweenOrientations = orientation2CP - myCurrOrientation;
-		float tolerance = 0.005f;
+		float tolerance = 0.007f;
 		float distance2CP = (float) Math.sqrt(Math.pow(directionX, 2) + Math.pow(directionY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
@@ -55,13 +55,13 @@ public class LosersInc extends AI {
 		// Winkel zw. Orientierungen < Abbremswinkel
 		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.
 		// Drehgeschwindigkeit / Abbremswinkel
-		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= 0.4f) {
+		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 2) {
 			throttle = 1f;
-			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 3f);
+			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
 		}
 
 		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
-		else if (Math.abs(angleBetweenOrientations) > 0.4) {
+		else if (Math.abs(angleBetweenOrientations) > Math.PI / 2) {
 			throttle = 1;
 			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
 		}
@@ -73,10 +73,10 @@ public class LosersInc extends AI {
 		// Abstand(Start, Ziel) < Zielradius
 		// Bereits angekommen – Fertig!
 		if (distance2CP < 10) {
-			throttle = 0;
+			throttle = (currVelocity < 0.5 * maxVelocity) ? 0.5f : 0;
 			steering = 1;
-		} else if (distance2CP < 40 && currVelocity > 10) {
-			throttle = 0;
+		} else if (distance2CP < 40) {
+			throttle = (currVelocity < 0.7 * maxVelocity) ? 0.3f : 0;
 		}
 		// Abstand(Start, Ziel) < Abbremsradius
 		// Wunschgeschwindigkeit = (Ziel – Start) * maximale Geschwindigkeit /
@@ -93,12 +93,18 @@ public class LosersInc extends AI {
 
 		// debugInfo(throttle, steering, angleBetweenOrientations,
 		// wishAngularVelocity, distance2CP, currVelocity);
-		
+
 		return new DriverAction(throttle, steering);
 	}
 
 	private void avoidObstacle(float currX, float currY) {
 
+	}
+
+	@Override
+	public String getTextureResourceName() {
+		// TODO Auto-generated method stub
+		return "/s0553863/car.png";
 	}
 
 	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float wishAngularVelocity,
@@ -108,17 +114,25 @@ public class LosersInc extends AI {
 		// + angleBetweenOrientations + " wishAngularVelocity: " +
 		// wishAngularVelocity);
 		System.out.println("Distance to CP: " + distance2CP + " current Velocity: " + currVelocity);
-	}	
-		
+	}
+
 	@Override
 	public void doDebugStuff() {
-		
+
 		glBegin(GL_LINES);
-			glVertex2f(info.getX(), info.getY());
-			glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
+		// orientation to next CP (black)
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
+		// current orientation (blue)
+		glColor3f(0, 0, 1);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * 20),
+				(float) (info.getY() + Math.sin(info.getOrientation()) * 20));
+
 		glEnd();
-		
+
+		System.out.println(info.getOrientation());
+
 	}
-	
 
 }
