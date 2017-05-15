@@ -2,7 +2,8 @@ package s0553863;
 
 import java.awt.Point;
 import java.awt.Polygon;
-//import org.lwjgl.util.vector.Vector2f;
+import org.lwjgl.util.vector.Vector2f;
+import static org.lwjgl.opengl.GL11.*;
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
@@ -36,7 +37,7 @@ public class LosersInc extends AI {
 		float directionY = (float) (currentCheckpoint.getY() - myCurrY);
 		float orientation2CP = (float) Math.atan2(directionY, directionX);
 		float angleBetweenOrientations = orientation2CP - myCurrOrientation;
-		float tolerance = 0.01f;
+		float tolerance = 0.005f;
 		float distance2CP = (float) Math.sqrt(Math.pow(directionX, 2) + Math.pow(directionY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
@@ -56,7 +57,7 @@ public class LosersInc extends AI {
 		// Drehgeschwindigkeit / Abbremswinkel
 		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= 0.4f) {
 			throttle = 1f;
-			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
+			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 3f);
 		}
 
 		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
@@ -92,7 +93,7 @@ public class LosersInc extends AI {
 
 		// debugInfo(throttle, steering, angleBetweenOrientations,
 		// wishAngularVelocity, distance2CP, currVelocity);
-
+		
 		return new DriverAction(throttle, steering);
 	}
 
@@ -107,6 +108,17 @@ public class LosersInc extends AI {
 		// + angleBetweenOrientations + " wishAngularVelocity: " +
 		// wishAngularVelocity);
 		System.out.println("Distance to CP: " + distance2CP + " current Velocity: " + currVelocity);
+	}	
+		
+	@Override
+	public void doDebugStuff() {
+		
+		glBegin(GL_LINES);
+			glVertex2f(info.getX(), info.getY());
+			glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
+		glEnd();
+		
 	}
+	
 
 }
