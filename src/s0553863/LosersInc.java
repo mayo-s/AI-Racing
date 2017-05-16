@@ -2,6 +2,7 @@ package s0553863;
 
 import java.awt.Point;
 import java.awt.Polygon;
+import java.awt.geom.Point2D;
 import org.lwjgl.util.vector.Vector2f;
 import static org.lwjgl.opengl.GL11.*;
 import lenz.htw.ai4g.ai.AI;
@@ -27,7 +28,6 @@ public class LosersInc extends AI {
 
 	@Override
 	public String getTextureResourceName() {
-		// TODO Auto-generated method stub
 		return "/s0553863/car.png";
 	}
 
@@ -47,6 +47,25 @@ public class LosersInc extends AI {
 		float distance2CP = (float) Math.sqrt(Math.pow(directionX, 2) + Math.pow(directionY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
+		float angleValue = 18;
+		float lengthMultiplier = 33;
+		float steering = 0;
+		if (obstacles.length > 2) {
+			Point2D.Double forward = new Point2D.Double(
+					((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier)),
+					(float) (info.getY() + Math.sin(info.getOrientation()) * lengthMultiplier));
+			Point2D.Double left = new Point2D.Double(
+					(float) (info.getX() + Math.cos(info.getOrientation() - angleValue) * (lengthMultiplier - 5)),
+					(float) (info.getY() + Math.sin(info.getOrientation() - angleValue) * (lengthMultiplier - 5)));
+			Point2D.Double right = new Point2D.Double(
+					((float) (info.getX() + Math.cos(info.getOrientation() + angleValue) * (lengthMultiplier - 5))),
+					(float) (info.getY() + Math.sin(info.getOrientation() + angleValue) * (lengthMultiplier - 5)));
+			if(obstacles[2].contains(right) || obstacles[2].contains(right) && obstacles[2].contains(forward))
+				return new DriverAction(0.1f, 0.4f);
+			if(obstacles[2].contains(left) || obstacles[2].contains(left) && obstacles[2].contains(forward))
+				return new DriverAction(0.1f, -0.4f);
+		}
+
 		if (angleBetweenOrientations > Math.PI)
 			angleBetweenOrientations -= 2 * Math.PI;
 		if (angleBetweenOrientations < -Math.PI)
@@ -61,20 +80,20 @@ public class LosersInc extends AI {
 		// Winkel zw. Orientierungen < Abbremswinkel
 		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.
 		// Drehgeschwindigkeit / Abbremswinkel
-		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 2) {
+		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 4) {
 			throttle = 1f;
 			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
 		}
 
 		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
-		else if (Math.abs(angleBetweenOrientations) > Math.PI / 2) {
+		else if (Math.abs(angleBetweenOrientations) > Math.PI / 4) {
 			throttle = 1;
 			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
 		}
 
 		// DrehBeschleunigung = (Wunschdrehgeschw. – aktuelle
 		// Drehgeschwindigkeit) / Wunschzeit
-		float steering = (wishAngularVelocity - currAngularVelocity) / wishTime;
+		steering = (wishAngularVelocity - currAngularVelocity) / wishTime;
 
 		// Abstand(Start, Ziel) < Zielradius
 		// Bereits angekommen – Fertig!
@@ -101,12 +120,8 @@ public class LosersInc extends AI {
 		// wishAngularVelocity, distance2CP, currVelocity);
 
 		return new DriverAction(throttle, steering);
-	}
-
-	private void avoidObstacle(float currX, float currY) {
 
 	}
-
 
 	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float wishAngularVelocity,
 			float distance2CP, float currVelocity) {
@@ -119,20 +134,20 @@ public class LosersInc extends AI {
 
 	@Override
 	public void doDebugStuff() {
-		
-		float testValue = 6.75f;
-		float lengthMultiplier = 30;
+
+		float testValue = 18;
+		float lengthMultiplier = 33;
 
 		glBegin(GL_LINES);
 		// orientation to next CP (black)
 		glVertex2f(info.getX(), info.getY());
 		glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
-		// current orientation (blue)
+		// vector for current orientation (blue)
 		glColor3f(0, 0, 1);
 		glVertex2f(info.getX(), info.getY());
 		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier),
 				(float) (info.getY() + Math.sin(info.getOrientation()) * lengthMultiplier));
-		// test orientation (red)
+		// left and right view vectors (red)
 		glColor3f(1, 0, 0);
 		glVertex2f(info.getX(), info.getY());
 		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() + testValue) * lengthMultiplier),
