@@ -26,6 +26,12 @@ public class LosersInc extends AI {
 	}
 
 	@Override
+	public String getTextureResourceName() {
+		// TODO Auto-generated method stub
+		return "/s0553863/car.png";
+	}
+
+	@Override
 	public DriverAction update(boolean arg0) {
 		Point currentCheckpoint = info.getCurrentCheckpoint();
 
@@ -101,11 +107,6 @@ public class LosersInc extends AI {
 
 	}
 
-	@Override
-	public String getTextureResourceName() {
-		// TODO Auto-generated method stub
-		return "/s0553863/car.png";
-	}
 
 	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float wishAngularVelocity,
 			float distance2CP, float currVelocity) {
@@ -118,6 +119,9 @@ public class LosersInc extends AI {
 
 	@Override
 	public void doDebugStuff() {
+		
+		float testValue = 6.75f;
+		float lengthMultiplier = 30;
 
 		glBegin(GL_LINES);
 		// orientation to next CP (black)
@@ -126,13 +130,18 @@ public class LosersInc extends AI {
 		// current orientation (blue)
 		glColor3f(0, 0, 1);
 		glVertex2f(info.getX(), info.getY());
-		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * 20),
-				(float) (info.getY() + Math.sin(info.getOrientation()) * 20));
-
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation()) * lengthMultiplier));
+		// test orientation (red)
+		glColor3f(1, 0, 0);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() + testValue) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation() + testValue) * lengthMultiplier));
+		glColor3f(1, 0, 0);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() - testValue) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation() - testValue) * lengthMultiplier));
 		glEnd();
-
-		System.out.println(info.getOrientation());
-
 	}
 
 }
