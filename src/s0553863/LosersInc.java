@@ -50,6 +50,7 @@ public class LosersInc extends AI {
 		float angleValue = 18;
 		float lengthMultiplier = 33;
 		float steering = 0;
+		
 		if (obstacles.length > 2) {
 			Point2D.Double forward = new Point2D.Double(
 					((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier)),
@@ -60,10 +61,13 @@ public class LosersInc extends AI {
 			Point2D.Double right = new Point2D.Double(
 					((float) (info.getX() + Math.cos(info.getOrientation() + angleValue) * (lengthMultiplier - 5))),
 					(float) (info.getY() + Math.sin(info.getOrientation() + angleValue) * (lengthMultiplier - 5)));
-			if(obstacles[2].contains(right) || obstacles[2].contains(right) && obstacles[2].contains(forward))
-				return new DriverAction(0.1f, 0.4f);
-			if(obstacles[2].contains(left) || obstacles[2].contains(left) && obstacles[2].contains(forward))
-				return new DriverAction(0.1f, -0.4f);
+
+			for (int i = 2; i < obstacles.length; i++) {
+				if (obstacles[i].contains(right) || obstacles[i].contains(right) && obstacles[i].contains(forward))
+					return new DriverAction(0.1f, 0.4f);
+				if (obstacles[i].contains(left) || obstacles[i].contains(left) && obstacles[i].contains(forward))
+					return new DriverAction(0.1f, -0.4f);
+			}
 		}
 
 		if (angleBetweenOrientations > Math.PI)
