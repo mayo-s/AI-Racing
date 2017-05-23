@@ -3,7 +3,8 @@ package s0553863;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.geom.Point2D;
-import org.lwjgl.util.vector.Vector2f;
+import java.awt.geom.Area;
+//import org.lwjgl.util.vector.Vector2f;
 import static org.lwjgl.opengl.GL11.*;
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
@@ -16,6 +17,7 @@ public class LosersInc extends AI {
 	float maxAcceleration = info.getMaxAcceleration();
 	float maxAngularAcceleration = info.getMaxAngularAcceleration();
 	Polygon[] obstacles = info.getTrack().getObstacles();
+	private boolean obstacleOutput = false;
 
 	public LosersInc(Info info) {
 		super(info);
@@ -43,14 +45,13 @@ public class LosersInc extends AI {
 		float directionY = (float) (currentCheckpoint.getY() - myCurrY);
 		float orientation2CP = (float) Math.atan2(directionY, directionX);
 		float angleBetweenOrientations = orientation2CP - myCurrOrientation;
-		float tolerance = 0.007f;
 		float distance2CP = (float) Math.sqrt(Math.pow(directionX, 2) + Math.pow(directionY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
 		float angleValue = 18;
-		float lengthMultiplier = 33;
+		float lengthMultiplier = 40;
 		float steering = 0;
-		
+
 		if (obstacles.length > 2) {
 			Point2D.Double forward = new Point2D.Double(
 					((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier)),
@@ -77,20 +78,22 @@ public class LosersInc extends AI {
 
 		// Winkel zwischen Orientierungen < Toleranz
 		// Bereits angekommen – Fertig!
-		float wishTime = 1.5f;
+		float tolerance = 0.005f;
+		float wishTime = 1.1f;
 		float wishAngularVelocity = 0;
 		float throttle = maxVelocity;
+		double abbremswinkel = Math.PI / 3.5;
 
 		// Winkel zw. Orientierungen < Abbremswinkel
 		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.
 		// Drehgeschwindigkeit / Abbremswinkel
-		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 4) {
+		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= abbremswinkel) {
 			throttle = 1f;
-			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
+			wishAngularVelocity = (float) (angleBetweenOrientations * maxAngularVelocity / abbremswinkel);
 		}
 
 		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
-		else if (Math.abs(angleBetweenOrientations) > Math.PI / 4) {
+		else if (Math.abs(angleBetweenOrientations) > abbremswinkel) {
 			throttle = 1;
 			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
 		}
@@ -136,11 +139,14 @@ public class LosersInc extends AI {
 		System.out.println("Distance to CP: " + distance2CP + " current Velocity: " + currVelocity);
 	}
 
+
 	@Override
 	public void doDebugStuff() {
 
+		drawObstacleGraph();
+
 		float testValue = 18;
-		float lengthMultiplier = 33;
+		float lengthMultiplier = 40;
 
 		glBegin(GL_LINES);
 		// orientation to next CP (black)
@@ -163,4 +169,42 @@ public class LosersInc extends AI {
 		glEnd();
 	}
 
+	public void drawObstacleGraph() {
+		// output obstacle coords
+		if (!obstacleOutput) {
+			for (int i = 2; i < obstacles.length; i++) {
+				System.out.println("Obstacle " + i);
+				Polygon obstacle = obstacles[i];
+				for (int n = 0; n < obstacle.xpoints.length; n++) {
+					System.out.print(obstacle.xpoints[n] + " ");
+					
+					System.out.print(obstacle.ypoints[n] + "\n");
+				}
+			}
+			obstacleOutput = true;
+		}
+		
+		glBegin(GL_LINES);
+		
+		for (int i = 2; i < obstacles.length; i++) {
+			Polygon obstacle = obstacles[i];
+			
+			for (int k = 2; k < obstacles.length; k++) {
+				Polygon otherObstacle = obstacles[k];
+				if (k != i) {
+					for (int l = 0; l < obstacle.xpoints.length; l++) {
+						for (int m = 0; m < otherObstacle.xpoints.length; m++) {
+							glBegin(GL_LINES);
+							glColor3f(0, 0, 0);
+							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
+							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
+							glEnd();
+						}
+					}
+				}
+			}
+		}
+		
+		glEnd();
+	}
 }
