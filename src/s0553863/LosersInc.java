@@ -3,7 +3,10 @@ package s0553863;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.awt.geom.Area;
+import java.awt.geom.Line2D;
+
 //import org.lwjgl.util.vector.Vector2f;
 import static org.lwjgl.opengl.GL11.*;
 import lenz.htw.ai4g.ai.AI;
@@ -18,9 +21,11 @@ public class LosersInc extends AI {
 	float maxAngularAcceleration = info.getMaxAngularAcceleration();
 	Polygon[] obstacles = info.getTrack().getObstacles();
 	private boolean obstacleOutput = false;
+	private ArrayList<Line2D> obstacleLines;
 
 	public LosersInc(Info info) {
 		super(info);
+		getObstacleLines();
 	}
 
 	@Override
@@ -139,7 +144,6 @@ public class LosersInc extends AI {
 		System.out.println("Distance to CP: " + distance2CP + " current Velocity: " + currVelocity);
 	}
 
-
 	@Override
 	public void doDebugStuff() {
 
@@ -172,39 +176,69 @@ public class LosersInc extends AI {
 	public void drawObstacleGraph() {
 		// output obstacle coords
 		if (!obstacleOutput) {
-			for (int i = 2; i < obstacles.length; i++) {
-				System.out.println("Obstacle " + i);
+			for (int i = 0; i < obstacles.length; i++) {
+				System.out.println("\nObstacle " + i);
 				Polygon obstacle = obstacles[i];
 				for (int n = 0; n < obstacle.xpoints.length; n++) {
 					System.out.print(obstacle.xpoints[n] + " ");
-					
+
 					System.out.print(obstacle.ypoints[n] + "\n");
 				}
 			}
 			obstacleOutput = true;
 		}
-		
-		glBegin(GL_LINES);
-		
-		for (int i = 2; i < obstacles.length; i++) {
+
+		// draw all edge connections
+		for (int i = 0; i < obstacles.length - 1; i++) {
 			Polygon obstacle = obstacles[i];
-			
-			for (int k = 2; k < obstacles.length; k++) {
+
+			for (int k = i + 1; k < obstacles.length; k++) {
 				Polygon otherObstacle = obstacles[k];
-				if (k != i) {
-					for (int l = 0; l < obstacle.xpoints.length; l++) {
-						for (int m = 0; m < otherObstacle.xpoints.length; m++) {
-							glBegin(GL_LINES);
-							glColor3f(0, 0, 0);
-							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
-							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
-							glEnd();
+
+				for (int x = 0; x < obstacle.xpoints.length; x++) {
+					for (int y = 0; y < otherObstacle.xpoints.length; y++) {
+						Line2D.Double line1 = new Line2D.Double(
+								new Point2D.Double(obstacle.xpoints[x], obstacle.ypoints[x]),
+								new Point2D.Double(otherObstacle.xpoints[y], otherObstacle.ypoints[y]));
+
+						for (Line2D line2 : obstacleLines) {
+
+							boolean intersects = line1.intersectsLine(line2);
+							System.out.println(intersects);
+							if (!intersects) {
+								glBegin(GL_LINES);
+								glColor3f(0, 0, 0);
+								glVertex2f(obstacle.xpoints[x], obstacle.ypoints[x]);
+								glVertex2f(otherObstacle.xpoints[y], otherObstacle.ypoints[y]);
+								glEnd();
+							}
 						}
 					}
 				}
 			}
 		}
-		
-		glEnd();
+	}
+
+	private void getObstacleLines() {
+
+		obstacleLines = new ArrayList<Line2D>();
+		for (Polygon obstacle : obstacles) {
+			for (int x = 0; x < obstacle.xpoints.length - 1; x++) {
+				int xpoint = obstacle.xpoints[x];
+				int nextXpoint = obstacle.xpoints[x + 1];
+
+				for (int y = 0; y < obstacle.ypoints.length; y++) {
+					int ypoint = obstacle.ypoints[y];
+					int nextYpoint = obstacle.ypoints[y];
+
+					if (x < obstacle.xpoints.length - 1 || y < obstacle.ypoints.length - 1)
+						obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
+								new Point2D.Double(nextXpoint, nextYpoint)));
+					else
+						obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
+								new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
+				}
+			}
+		}
 	}
 }
