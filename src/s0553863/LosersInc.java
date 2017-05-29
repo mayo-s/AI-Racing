@@ -192,27 +192,29 @@ public class LosersInc extends AI {
 		for (int i = 0; i < obstacles.length - 1; i++) {
 			Polygon obstacle = obstacles[i];
 
-			for (int k = i + 1; k < obstacles.length; k++) {
+			for (int k = 0; k < obstacles.length; k++) {
 				Polygon otherObstacle = obstacles[k];
 
-				for (int x = 0; x < obstacle.xpoints.length; x++) {
-					for (int y = 0; y < otherObstacle.xpoints.length; y++) {
+				for (int l = 0; l < obstacle.xpoints.length; l++) {
+					for (int m = 0; m < otherObstacle.xpoints.length; m++) {
 						Line2D.Double line1 = new Line2D.Double(
-								new Point2D.Double(obstacle.xpoints[x], obstacle.ypoints[x]),
-								new Point2D.Double(otherObstacle.xpoints[y], otherObstacle.ypoints[y]));
+								new Point2D.Double(obstacle.xpoints[l], obstacle.ypoints[l]),
+								new Point2D.Double(otherObstacle.xpoints[m], otherObstacle.ypoints[m]));
 
+						boolean intersects = false;
 						for (Line2D line2 : obstacleLines) {
-
-							boolean intersects = line1.intersectsLine(line2);
-							System.out.println(intersects);
-							if (!intersects) {
-								glBegin(GL_LINES);
-								glColor3f(0, 0, 0);
-								glVertex2f(obstacle.xpoints[x], obstacle.ypoints[x]);
-								glVertex2f(otherObstacle.xpoints[y], otherObstacle.ypoints[y]);
-								glEnd();
-							}
+							intersects = line1.intersectsLine(line2);;
 						}
+						if (!intersects) {
+							System.out.println("Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to " + otherObstacle.xpoints[m] + " " +otherObstacle.ypoints[m]);
+							glBegin(GL_LINES);
+							glColor3f(0, 0, 0);
+							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
+							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
+							glEnd();
+						}
+						else
+							System.out.println("Don't Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to " + otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
 					}
 				}
 			}
