@@ -6,8 +6,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
-
-//import org.lwjgl.util.vector.Vector2f;
+import org.lwjgl.util.vector.Vector2f;
 import static org.lwjgl.opengl.GL11.*;
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
@@ -22,9 +21,12 @@ public class LosersInc extends AI {
 	Polygon[] obstacles = info.getTrack().getObstacles();
 	private boolean obstacleOutput = false;
 	private ArrayList<Line2D> obstacleLines;
+	private ArrayList<Point2D> points;
 
 	public LosersInc(Info info) {
 		super(info);
+		obstacleLines = new ArrayList<Line2D>();
+		points = new ArrayList<Point2D>();
 		getObstacleLines();
 	}
 
@@ -173,22 +175,53 @@ public class LosersInc extends AI {
 		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() - testValue) * lengthMultiplier),
 				(float) (info.getY() + Math.sin(info.getOrientation() - testValue) * lengthMultiplier));
 		glEnd();
+		
+		for(int i = 0; i < points.size(); i++){
+			glBegin(GL_POINTS);
+			glPointSize(10f);
+			glVertex2d(points.get(i).getX(), points.get(i).getY());
+			glEnd();
+		}
+		
+		
+	}
+
+	private Point2D movePoint(int x0, int y0, int x1, int y1, int x2, int y2) {
+		Point2D point = new Point2D.Double(x1, y1);
+
+		Vector2f newVec = new Vector2f(x2 - x0, y2 - y0);
+		Vector2f normalVec = new Vector2f(-(newVec.getY()), newVec.getX());
+		normalVec.normalise();
+		normalVec.scale(50);
+		Point2D newPoint = new Point2D.Double(point.getX() + normalVec.getX(), point.getY() + normalVec.getY());
+
+		return newPoint;
+	}
+
+	private boolean isLeftTurn(int x0, int y0, int x1, int y1, int x2, int y2) {
+		int value = 0;
+		value = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+		if (value > 0) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	public void drawObstacleGraph() {
 		// output obstacle coords
-//		if (!obstacleOutput) {
-//			for (int i = 0; i < obstacles.length; i++) {
-//				System.out.println("\nObstacle " + i);
-//				Polygon obstacle = obstacles[i];
-//				for (int n = 0; n < obstacle.xpoints.length; n++) {
-//					System.out.print(obstacle.xpoints[n] + " ");
-//
-//					System.out.print(obstacle.ypoints[n] + "\n");
-//				}
-//			}
-//			obstacleOutput = true;
-//		}
+		// if (!obstacleOutput) {
+		// for (int i = 0; i < obstacles.length; i++) {
+		// System.out.println("\nObstacle " + i);
+		// Polygon obstacle = obstacles[i];
+		// for (int n = 0; n < obstacle.xpoints.length; n++) {
+		// System.out.print(obstacle.xpoints[n] + " ");
+		//
+		// System.out.print(obstacle.ypoints[n] + "\n");
+		// }
+		// }
+		// obstacleOutput = true;
+		// }
 
 		// draw all edge connections
 		for (int i = 0; i < obstacles.length; i++) {
@@ -218,15 +251,16 @@ public class LosersInc extends AI {
 							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
 							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
 							glEnd();
-						} else {
-							System.out.println("Don't Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
-									+ otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
-							glBegin(GL_LINES);
-							glColor3f(1, 0, 0);
-							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
-							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
-							glEnd();
-						}
+						} 
+//						else {
+//							System.out.println("Don't Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
+//									+ otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
+//							glBegin(GL_LINES);
+//							glColor3f(1, 0, 0);
+//							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
+//							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
+//							glEnd();
+//						}
 					}
 				}
 			}
@@ -235,21 +269,29 @@ public class LosersInc extends AI {
 
 	private void getObstacleLines() {
 
-		obstacleLines = new ArrayList<Line2D>();
 		for (Polygon obstacle : obstacles) {
 			for (int pos = 0; pos < obstacle.xpoints.length - 1; pos++) {
+
 				int xpoint = obstacle.xpoints[pos];
-				int nextXpoint = obstacle.xpoints[pos + 1];
+				int nextXpoint = obstacle.xpoints[(pos + 1) % obstacle.npoints];
+				int nextNextXpoint = obstacle.xpoints[(pos + 2)% obstacle.npoints];
 
 				int ypoint = obstacle.ypoints[pos];
-				int nextYpoint = obstacle.ypoints[pos + 1];
+				int nextYpoint = obstacle.ypoints[(pos + 1) % obstacle.npoints];
+				int nextNextYpoint = obstacle.ypoints[(pos + 2)% obstacle.npoints];
 
-					obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
-							new Point2D.Double(nextXpoint, nextYpoint)));
+				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
+						new Point2D.Double(nextXpoint, nextYpoint)));
+				if(isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)){
+					points.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
+				}
+				
 
 			}
-			obstacleLines.add(new Line2D.Double(new Point2D.Double(obstacle.xpoints[obstacle.npoints - 1], obstacle.ypoints[obstacle.npoints - 1]),
+			obstacleLines.add(new Line2D.Double(
+					new Point2D.Double(obstacle.xpoints[obstacle.npoints - 1], obstacle.ypoints[obstacle.npoints - 1]),
 					new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
 		}
+
 	}
 }
