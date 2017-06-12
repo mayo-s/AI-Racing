@@ -135,14 +135,16 @@ public class LosersInc extends AI {
 
 	}
 
-	private void debugInfo(float throttle, float steering, float angleBetweenOrientations, float wishAngularVelocity,
-			float distance2CP, float currVelocity) {
-		// System.out.println("Throttle: " + throttle + " Steering: " + steering
-		// + " Angle between Orientations: "
-		// + angleBetweenOrientations + " wishAngularVelocity: " +
-		// wishAngularVelocity);
-		System.out.println("Distance to CP: " + distance2CP + " current Velocity: " + currVelocity);
-	}
+	// private void debugInfo(float throttle, float steering, float
+	// angleBetweenOrientations, float wishAngularVelocity,
+	// float distance2CP, float currVelocity) {
+	// // System.out.println("Throttle: " + throttle + " Steering: " + steering
+	// // + " Angle between Orientations: "
+	// // + angleBetweenOrientations + " wishAngularVelocity: " +
+	// // wishAngularVelocity);
+	// System.out.println("Distance to CP: " + distance2CP + " current Velocity:
+	// " + currVelocity);
+	// }
 
 	@Override
 	public void doDebugStuff() {
@@ -175,24 +177,24 @@ public class LosersInc extends AI {
 
 	public void drawObstacleGraph() {
 		// output obstacle coords
-		if (!obstacleOutput) {
-			for (int i = 0; i < obstacles.length; i++) {
-				System.out.println("\nObstacle " + i);
-				Polygon obstacle = obstacles[i];
-				for (int n = 0; n < obstacle.xpoints.length; n++) {
-					System.out.print(obstacle.xpoints[n] + " ");
-
-					System.out.print(obstacle.ypoints[n] + "\n");
-				}
-			}
-			obstacleOutput = true;
-		}
+//		if (!obstacleOutput) {
+//			for (int i = 0; i < obstacles.length; i++) {
+//				System.out.println("\nObstacle " + i);
+//				Polygon obstacle = obstacles[i];
+//				for (int n = 0; n < obstacle.xpoints.length; n++) {
+//					System.out.print(obstacle.xpoints[n] + " ");
+//
+//					System.out.print(obstacle.ypoints[n] + "\n");
+//				}
+//			}
+//			obstacleOutput = true;
+//		}
 
 		// draw all edge connections
-		for (int i = 0; i < obstacles.length - 1; i++) {
+		for (int i = 0; i < obstacles.length; i++) {
 			Polygon obstacle = obstacles[i];
 
-			for (int k = 0; k < obstacles.length; k++) {
+			for (int k = i; k < obstacles.length; k++) {
 				Polygon otherObstacle = obstacles[k];
 
 				for (int l = 0; l < obstacle.xpoints.length; l++) {
@@ -203,18 +205,28 @@ public class LosersInc extends AI {
 
 						boolean intersects = false;
 						for (Line2D line2 : obstacleLines) {
-							intersects = line1.intersectsLine(line2);;
+							intersects = line1.intersectsLine(line2);
+							if (intersects)
+								break;
 						}
+
 						if (!intersects) {
-							System.out.println("Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to " + otherObstacle.xpoints[m] + " " +otherObstacle.ypoints[m]);
+							System.out.println("Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
+									+ otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
 							glBegin(GL_LINES);
 							glColor3f(0, 0, 0);
 							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
 							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
 							glEnd();
+						} else {
+							System.out.println("Don't Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
+									+ otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
+							glBegin(GL_LINES);
+							glColor3f(1, 0, 0);
+							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
+							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
+							glEnd();
 						}
-						else
-							System.out.println("Don't Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to " + otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
 					}
 				}
 			}
@@ -225,22 +237,19 @@ public class LosersInc extends AI {
 
 		obstacleLines = new ArrayList<Line2D>();
 		for (Polygon obstacle : obstacles) {
-			for (int x = 0; x < obstacle.xpoints.length - 1; x++) {
-				int xpoint = obstacle.xpoints[x];
-				int nextXpoint = obstacle.xpoints[x + 1];
+			for (int pos = 0; pos < obstacle.xpoints.length - 1; pos++) {
+				int xpoint = obstacle.xpoints[pos];
+				int nextXpoint = obstacle.xpoints[pos + 1];
 
-				for (int y = 0; y < obstacle.ypoints.length; y++) {
-					int ypoint = obstacle.ypoints[y];
-					int nextYpoint = obstacle.ypoints[y];
+				int ypoint = obstacle.ypoints[pos];
+				int nextYpoint = obstacle.ypoints[pos + 1];
 
-					if (x < obstacle.xpoints.length - 1 || y < obstacle.ypoints.length - 1)
-						obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
-								new Point2D.Double(nextXpoint, nextYpoint)));
-					else
-						obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
-								new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
-				}
+					obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
+							new Point2D.Double(nextXpoint, nextYpoint)));
+
 			}
+			obstacleLines.add(new Line2D.Double(new Point2D.Double(obstacle.xpoints[obstacle.npoints - 1], obstacle.ypoints[obstacle.npoints - 1]),
+					new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
 		}
 	}
 }
