@@ -182,7 +182,6 @@ public class LosersInc extends AI {
 			glVertex2d(points.get(i).getX(), points.get(i).getY());
 			glEnd();
 		}
-
 	}
 
 	private Point2D movePoint(int x0, int y0, int x1, int y1, int x2, int y2) {
@@ -220,64 +219,37 @@ public class LosersInc extends AI {
 	}
 
 	public void drawObstacleGraph() {
-		// output obstacle coords
-		// if (!obstacleOutput) {
-		// for (int i = 0; i < obstacles.length; i++) {
-		// System.out.println("\nObstacle " + i);
-		// Polygon obstacle = obstacles[i];
-		// for (int n = 0; n < obstacle.xpoints.length; n++) {
-		// System.out.print(obstacle.xpoints[n] + " ");
-		//
-		// System.out.print(obstacle.ypoints[n] + "\n");
-		// }
-		// }
-		// obstacleOutput = true;
-		// }
 
-		// draw all edge connections
-		for (int i = 0; i < obstacles.length; i++) {
-			Polygon obstacle = obstacles[i];
+		for (int l = 0; l < points.size() - 1; l++) {
+			for (int m = l; m < points.size(); m++) {
+				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
 
-			for (int k = i; k < obstacles.length; k++) {
-				Polygon otherObstacle = obstacles[k];
-
-				for (int l = 0; l < obstacle.xpoints.length; l++) {
-					for (int m = 0; m < otherObstacle.xpoints.length; m++) {
-						Line2D.Double line1 = new Line2D.Double(
-								new Point2D.Double(obstacle.xpoints[l], obstacle.ypoints[l]),
-								new Point2D.Double(otherObstacle.xpoints[m], otherObstacle.ypoints[m]));
-
-						boolean intersects = false;
-						for (Line2D line2 : obstacleLines) {
-							intersects = line1.intersectsLine(line2);
-							if (intersects)
-								break;
-						}
-
-						if (!intersects) {
-							System.out.println("Draw: " + obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
-									+ otherObstacle.xpoints[m] + " " + otherObstacle.ypoints[m]);
-							glBegin(GL_LINES);
-							glColor3f(0, 0, 0);
-							glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
-							glVertex2f(otherObstacle.xpoints[m], otherObstacle.ypoints[m]);
-							glEnd();
-						}
-						// else {
-						// System.out.println("Don't Draw: " +
-						// obstacle.xpoints[l] + " " + obstacle.ypoints[l] + "
-						// to "
-						// + otherObstacle.xpoints[m] + " " +
-						// otherObstacle.ypoints[m]);
-						// glBegin(GL_LINES);
-						// glColor3f(1, 0, 0);
-						// glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
-						// glVertex2f(otherObstacle.xpoints[m],
-						// otherObstacle.ypoints[m]);
-						// glEnd();
-						// }
-					}
+				boolean intersects = false;
+				for (Line2D line : obstacleLines) {
+					intersects = currLine.intersectsLine(line);
+					if (intersects)
+						break;
 				}
+
+				if (!intersects) {
+					glBegin(GL_LINES);
+					glColor3f(0, 0, 0);
+					glVertex2d(points.get(l).getX(), points.get(l).getY());
+					glVertex2d(points.get(m).getX(), points.get(m).getY());
+					glEnd();
+				}
+				// else {
+				// System.out.println("Don't Draw: " +
+				// obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
+				// + otherObstacle.xpoints[m] + " " +
+				// otherObstacle.ypoints[m]);
+				// glBegin(GL_LINES);
+				// glColor3f(1, 0, 0);
+				// glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
+				// glVertex2f(otherObstacle.xpoints[m],
+				// otherObstacle.ypoints[m]);
+				// glEnd();
+				// }
 			}
 		}
 	}
