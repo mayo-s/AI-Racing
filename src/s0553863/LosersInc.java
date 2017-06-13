@@ -4,7 +4,7 @@ import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.awt.geom.Area;
+// import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import org.lwjgl.util.vector.Vector2f;
 import static org.lwjgl.opengl.GL11.*;
@@ -19,7 +19,6 @@ public class LosersInc extends AI {
 	float maxAcceleration = info.getMaxAcceleration();
 	float maxAngularAcceleration = info.getMaxAngularAcceleration();
 	Polygon[] obstacles = info.getTrack().getObstacles();
-	private boolean obstacleOutput = false;
 	private ArrayList<Line2D> obstacleLines;
 	private ArrayList<Point2D> points;
 
@@ -83,104 +82,59 @@ public class LosersInc extends AI {
 		if (angleBetweenOrientations < -Math.PI)
 			angleBetweenOrientations += 2 * Math.PI;
 
-		// Winkel zwischen Orientierungen < Toleranz
-		// Bereits angekommen – Fertig!
 		float tolerance = 0.005f;
 		float wishTime = 1.1f;
 		float wishAngularVelocity = 0;
 		float throttle = maxVelocity;
 		double abbremswinkel = Math.PI / 3.5;
 
-		// Winkel zw. Orientierungen < Abbremswinkel
-		// Wunschdrehgeschw. = (Zielorient. – Startorient.)∙ max.
-		// Drehgeschwindigkeit / Abbremswinkel
 		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= abbremswinkel) {
 			throttle = 1f;
 			wishAngularVelocity = (float) (angleBetweenOrientations * maxAngularVelocity / abbremswinkel);
 		}
 
-		// Sonst: Wunschdrehgeschw. = max. Drehgeschw.
 		else if (Math.abs(angleBetweenOrientations) > abbremswinkel) {
 			throttle = 1;
 			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
 		}
 
-		// DrehBeschleunigung = (Wunschdrehgeschw. – aktuelle
-		// Drehgeschwindigkeit) / Wunschzeit
 		steering = (wishAngularVelocity - currAngularVelocity) / wishTime;
 
-		// Abstand(Start, Ziel) < Zielradius
-		// Bereits angekommen – Fertig!
 		if (distance2CP < 10) {
 			throttle = (currVelocity < 0.5 * maxVelocity) ? 0.5f : 0;
 			steering = 1;
 		} else if (distance2CP < 40) {
 			throttle = (currVelocity < 0.7 * maxVelocity) ? 0.3f : 0;
-		}
-		// Abstand(Start, Ziel) < Abbremsradius
-		// Wunschgeschwindigkeit = (Ziel – Start) * maximale Geschwindigkeit /
-		// Abbremsradius
-		else if (distance2CP < 100) {
+		} else if (distance2CP < 100) {
 			throttle = distance2CP * maxVelocity / 0.4f;
-		}
-		// Sonst: Wunschgeschwindigkeit = max. Geschw.
-		// Beschleunigung = (Wunschgeschwindigkeit – aktuelle Geschwindigkeit) /
-		// Wunschzeit
-		else {
+		} else {
 			throttle = (float) ((maxVelocity - currVelocity) / wishTime);
 		}
-
-		// debugInfo(throttle, steering, angleBetweenOrientations,
-		// wishAngularVelocity, distance2CP, currVelocity);
-
 		return new DriverAction(throttle, steering);
-
 	}
 
-	// private void debugInfo(float throttle, float steering, float
-	// angleBetweenOrientations, float wishAngularVelocity,
-	// float distance2CP, float currVelocity) {
-	// // System.out.println("Throttle: " + throttle + " Steering: " + steering
-	// // + " Angle between Orientations: "
-	// // + angleBetweenOrientations + " wishAngularVelocity: " +
-	// // wishAngularVelocity);
-	// System.out.println("Distance to CP: " + distance2CP + " current Velocity:
-	// " + currVelocity);
-	// }
+	private void getObstacleLines() {
 
-	@Override
-	public void doDebugStuff() {
+		for (Polygon obstacle : obstacles) {
+			for (int pos = 0; pos < obstacle.xpoints.length; pos++) {
 
-		drawObstacleGraph();
+				int xpoint = obstacle.xpoints[pos];
+				int nextXpoint = obstacle.xpoints[(pos + 1) % obstacle.npoints];
+				int nextNextXpoint = obstacle.xpoints[(pos + 2) % obstacle.npoints];
 
-		float testValue = 18;
-		float lengthMultiplier = 40;
+				int ypoint = obstacle.ypoints[pos];
+				int nextYpoint = obstacle.ypoints[(pos + 1) % obstacle.npoints];
+				int nextNextYpoint = obstacle.ypoints[(pos + 2) % obstacle.npoints];
 
-		glBegin(GL_LINES);
-		// orientation to next CP (black)
-		glVertex2f(info.getX(), info.getY());
-		glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
-		// vector for current orientation (blue)
-		glColor3f(0, 0, 1);
-		glVertex2f(info.getX(), info.getY());
-		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier),
-				(float) (info.getY() + Math.sin(info.getOrientation()) * lengthMultiplier));
-		// left and right view vectors (red)
-		glColor3f(1, 0, 0);
-		glVertex2f(info.getX(), info.getY());
-		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() + testValue) * lengthMultiplier),
-				(float) (info.getY() + Math.sin(info.getOrientation() + testValue) * lengthMultiplier));
-		glColor3f(1, 0, 0);
-		glVertex2f(info.getX(), info.getY());
-		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() - testValue) * lengthMultiplier),
-				(float) (info.getY() + Math.sin(info.getOrientation() - testValue) * lengthMultiplier));
-		glEnd();
-
-		for (int i = 0; i < points.size(); i++) {
-			glBegin(GL_POINTS);
-			glPointSize(10f);
-			glVertex2d(points.get(i).getX(), points.get(i).getY());
-			glEnd();
+				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
+						new Point2D.Double(nextXpoint, nextYpoint)));
+				if (isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)) {
+					points.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
+				}
+			}
+			obstacleLines.add(new Line2D.Double(
+					new Point2D.Double(obstacle.xpoints[obstacle.npoints - 1], obstacle.ypoints[obstacle.npoints - 1]),
+					new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
 		}
 	}
 
@@ -233,51 +187,50 @@ public class LosersInc extends AI {
 
 				if (!intersects) {
 					glBegin(GL_LINES);
-					glColor3f(0, 0, 0);
+					glColor3f(1f, 1f, 0.5f); // yellowish
 					glVertex2d(points.get(l).getX(), points.get(l).getY());
 					glVertex2d(points.get(m).getX(), points.get(m).getY());
 					glEnd();
 				}
-				// else {
-				// System.out.println("Don't Draw: " +
-				// obstacle.xpoints[l] + " " + obstacle.ypoints[l] + " to "
-				// + otherObstacle.xpoints[m] + " " +
-				// otherObstacle.ypoints[m]);
-				// glBegin(GL_LINES);
-				// glColor3f(1, 0, 0);
-				// glVertex2f(obstacle.xpoints[l], obstacle.ypoints[l]);
-				// glVertex2f(otherObstacle.xpoints[m],
-				// otherObstacle.ypoints[m]);
-				// glEnd();
-				// }
 			}
 		}
 	}
 
-	private void getObstacleLines() {
+	@Override
+	public void doDebugStuff() {
 
-		for (Polygon obstacle : obstacles) {
-			for (int pos = 0; pos < obstacle.xpoints.length; pos++) {
+		drawObstacleGraph();
 
-				int xpoint = obstacle.xpoints[pos];
-				int nextXpoint = obstacle.xpoints[(pos + 1) % obstacle.npoints];
-				int nextNextXpoint = obstacle.xpoints[(pos + 2) % obstacle.npoints];
+		float testValue = 18;
+		float lengthMultiplier = 40;
 
-				int ypoint = obstacle.ypoints[pos];
-				int nextYpoint = obstacle.ypoints[(pos + 1) % obstacle.npoints];
-				int nextNextYpoint = obstacle.ypoints[(pos + 2) % obstacle.npoints];
+		glBegin(GL_LINES);
+		// orientation to next CP (black)
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
+		// vector for current orientation (blue)
+		glColor3f(0, 0, 1);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation()) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation()) * lengthMultiplier));
+		// left and right view vectors (red)
+		glColor3f(1, 0, 0);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() + testValue) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation() + testValue) * lengthMultiplier));
+		glColor3f(1, 0, 0);
+		glVertex2f(info.getX(), info.getY());
+		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() - testValue) * lengthMultiplier),
+				(float) (info.getY() + Math.sin(info.getOrientation() - testValue) * lengthMultiplier));
+		glEnd();
 
-				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
-						new Point2D.Double(nextXpoint, nextYpoint)));
-				if (isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)) {
-					points.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
-				}
-
-			}
-			obstacleLines.add(new Line2D.Double(
-					new Point2D.Double(obstacle.xpoints[obstacle.npoints - 1], obstacle.ypoints[obstacle.npoints - 1]),
-					new Point2D.Double(obstacle.xpoints[0], obstacle.ypoints[0])));
+		// points with with small distance to obstacle
+		for (int i = 0; i < points.size(); i++) {
+			glColor3f(0, 1, 0); // green
+			glBegin(GL_POINTS);
+			glPointSize(44f);
+			glVertex2d(points.get(i).getX(), points.get(i).getY());
+			glEnd();
 		}
-
 	}
 }
