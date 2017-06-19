@@ -21,12 +21,14 @@ public class LosersInc extends AI {
 	Polygon[] obstacles = info.getTrack().getObstacles();
 	private ArrayList<Line2D> obstacleLines;
 	private ArrayList<Point2D> vertices;
+	private ArrayList<Vertex> allVertices;
 	private ArrayList<ArrayList<Edge>> edges;
 
 	public LosersInc(Info info) {
 		super(info);
 		obstacleLines = new ArrayList<Line2D>();
 		vertices = new ArrayList<Point2D>();
+		allVertices = new ArrayList<Vertex>();
 		edges = new ArrayList<ArrayList<Edge>>();
 		getObstacleLines();
 	}
@@ -186,7 +188,7 @@ public class LosersInc extends AI {
 					Point2D p2 = vertices.get(m);
 					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) (p2.getY() - p1.getY()));
 
-					edges.get(l).add(new Edge(p2, cost.length()));
+					edges.get(l).add(new Edge(m, p2, cost.length()));
 				}
 			}
 		}
@@ -203,32 +205,37 @@ public class LosersInc extends AI {
 				if (!currEdge.intersectsLine(line)) {
 					Vector2f cost = new Vector2f((float) (vertices.get(i).getX() - startPos.getX()),
 							(float) (vertices.get(i).getY() - startPos.getY()));
-					edges.get(edges.size() - 1).add(new Edge(vertices.get(i), cost.length()));
+					edges.get(edges.size() - 1).add(new Edge(i, vertices.get(i), cost.length()));
 				}
 			}
 		}
 	}
 
-	private void aStar(int start, int dest) {
-		float heuristic = new Vector2f((float) (vertices.get(dest).getX() - vertices.get(start).getX()),
-				(float) (vertices.get(dest).getY() - vertices.get(start).getY())).length();
-		findCheapestNextEdge(start, dest, heuristic);
-	}
-
-	private float calcHeuristic(Point2D start, int dest) {
-		float heuristic = new Vector2f((float) (vertices.get(dest).getX() - start.getX()),
-				(float) (vertices.get(dest).getY() - start.getY())).length();
-		return heuristic;
-	}
-
-	private Edge findCheapestNextEdge(int start, int dest, float heuristic) {
-		Edge cheapestEdge = new Edge(new Point2D.Double(), Float.POSITIVE_INFINITY);
-
-		for (int i = 0; i < edges.get(start).size(); i++) {
-			float currHeuristic = calcHeuristic(new Point2D.Double(edges.get(start).get(i).getTarget().getX(), edges.get(start).get(i).getTarget().getY()), dest);
-			
+	private void fillAllVertices() {
+		for (int i = 0; i < vertices.size(); i++) {
+			allVertices.add(new Vertex(i));
 		}
-		return cheapestEdge;
+	}
+
+	private void findPath(int currPos, int destination) {
+		ArrayList<Vertex> open = new ArrayList<Vertex>();
+		ArrayList<Vertex> closed = new ArrayList<Vertex>();
+		open.add(new Vertex(currPos));
+		open.get(0).setDistance(0);
+		open.get(0).setHeuristic(calcHeuristic(currPos, destination));
+		open.get(0).setF();
+
+		while (currPos != destination) {
+			for(Edge endPoint : edges.get(currPos)){
+				calcHeuristic(currPos, destination);
+			}
+		}
+
+	}
+
+	private float calcHeuristic(int start, int dest) {	
+		float heuristic = new Vector2f((float)(vertices.get(dest).getX() - vertices.get(start).getX()), (float)(vertices.get(dest).getY() - vertices.get(start).getY())).length();
+		return heuristic;
 	}
 
 	@Override

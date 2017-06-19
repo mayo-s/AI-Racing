@@ -4,10 +4,12 @@ import java.awt.geom.Point2D;
 
 public class Edge {
 	
+	int edgeId;
 	Point2D target;
 	float cost;
 	
-	Edge(Point2D target, float cost){
+	Edge(int id, Point2D target, float cost){
+		this.edgeId = id;
 		this.target = target;
 		this.cost = cost;		
 	}
@@ -19,5 +21,4 @@ public class Edge {
 	public float getCost(){
 		return cost;
 	}
-
 }

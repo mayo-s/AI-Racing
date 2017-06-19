@@ -3,17 +3,29 @@ package s0553863;
 public class Vertex {
 
 	int id;
-	double distance;
-	double heuristic;
+	double g; // distance
+	double h; // heuristic
 	double f;
 	int prevVertex;
 	
-	public Vertex(int id, double g, double h, int prevVertex){
+	public Vertex(int id){
 		this.id = id;
-		this.distance = g;
-		this.heuristic = h;
+	}
+	
+	public void setDistance(double dist){
+		this.g = dist;
+	}
+
+	public void setHeuristic(double h){
+		this.h = g + h;
+	}
+	
+	public void setF(){
 		this.f = g + h;
-		this.prevVertex = prevVertex;
+	}
+	
+	public void setNewPrevVertex(int newPrevVertex){
+		prevVertex = newPrevVertex;
 	}
 	
 }
