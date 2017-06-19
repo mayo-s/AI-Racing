@@ -143,13 +143,6 @@ public class LosersInc extends AI {
 	private Point2D movePoint(int x0, int y0, int x1, int y1, int x2, int y2) {
 		Point2D point = new Point2D.Double(x1, y1);
 
-		// Vector2f newVec = new Vector2f(x2 - x0, y2 - y0);
-		// Vector2f normalVec = new Vector2f(-(newVec.getY()), newVec.getX());
-		// normalVec.normalise();
-		// normalVec.scale(50);
-		// Point2D newPoint = new Point2D.Double(point.getX() +
-		// normalVec.getX(), point.getY() + normalVec.getY());
-
 		Vector2f vec1 = new Vector2f(x1 - x0, y1 - y0);
 		vec1.normalise();
 		Vector2f vec2 = new Vector2f(x1 - x2, y1 - y2);
@@ -215,21 +208,27 @@ public class LosersInc extends AI {
 			}
 		}
 	}
-	
-	private Edge findCheapestNextEdge(int posOfCurrEdge){
-		Edge cheapestEdge = new Edge(new Point2D.Double(), Float.POSITIVE_INFINITY);
-		for(Edge e : edges.get(posOfCurrEdge)){
-			if(cheapestEdge.getCost() > e.getCost()){
-				cheapestEdge = e;
-			}
-		}	
-		return cheapestEdge;
+
+	private void aStar(int start, int dest) {
+		float heuristic = new Vector2f((float) (vertices.get(dest).getX() - vertices.get(start).getX()),
+				(float) (vertices.get(dest).getY() - vertices.get(start).getY())).length();
+		findCheapestNextEdge(start, dest, heuristic);
 	}
-	
-	private ArrayList<Edge> shortestPath(int currPos, int targetPos){
-		
-		
-		return null;
+
+	private float calcHeuristic(Point2D start, int dest) {
+		float heuristic = new Vector2f((float) (vertices.get(dest).getX() - start.getX()),
+				(float) (vertices.get(dest).getY() - start.getY())).length();
+		return heuristic;
+	}
+
+	private Edge findCheapestNextEdge(int start, int dest, float heuristic) {
+		Edge cheapestEdge = new Edge(new Point2D.Double(), Float.POSITIVE_INFINITY);
+
+		for (int i = 0; i < edges.get(start).size(); i++) {
+			float currHeuristic = calcHeuristic(new Point2D.Double(edges.get(start).get(i).getTarget().getX(), edges.get(start).get(i).getTarget().getY()), dest);
+			
+		}
+		return cheapestEdge;
 	}
 
 	@Override
