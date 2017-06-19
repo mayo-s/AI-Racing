@@ -174,7 +174,7 @@ public class LosersInc extends AI {
 		}
 	}
 
-	public void drawObstacleGraph() {
+	public void createGraph() {
 
 		for (int l = 0; l < vertices.size() - 1; l++) {
 			edges.add(new ArrayList<Edge>());
@@ -191,28 +191,51 @@ public class LosersInc extends AI {
 				if (!intersects) {
 					Point2D p1 = vertices.get(l);
 					Point2D p2 = vertices.get(m);
-					
-//					glBegin(GL_LINES);
-//					glColor3f(1f, 1f, 0.5f); // yellowish
-//					glVertex2d(p1.getX(), p1.getY());
-//					glVertex2d(p2.getX(), p2.getY());
-//					glEnd();
-					
-					float costFormular = (float) Math.sqrt(Math.pow(p2.getX() - p1.getX(), 2) + Math.pow((p2.getY() - p1.getY()), 2));
-					Vector2f cost = new Vector2f((float)(p2.getX() - p1.getX()), (float)(p2.getY() - p1.getY()));
-					
-					System.out.println("Formular:" + costFormular + " VecLength: " + cost.length());
-					
+					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) (p2.getY() - p1.getY()));
+
 					edges.get(l).add(new Edge(p2, cost.length()));
 				}
 			}
 		}
+		addStartingPos();
+	}
+
+	private void addStartingPos() {
+		edges.add(new ArrayList<Edge>());
+		Point2D startPos = new Point2D.Double(info.getX(), info.getY());
+		for (int i = 0; i < vertices.size(); i++) {
+
+			for (Line2D line : obstacleLines) {
+				Line2D currEdge = new Line2D.Double(startPos, vertices.get(i));
+				if (!currEdge.intersectsLine(line)) {
+					Vector2f cost = new Vector2f((float) (vertices.get(i).getX() - startPos.getX()),
+							(float) (vertices.get(i).getY() - startPos.getY()));
+					edges.get(edges.size() - 1).add(new Edge(vertices.get(i), cost.length()));
+				}
+			}
+		}
+	}
+	
+	private Edge findCheapestNextEdge(int posOfCurrEdge){
+		Edge cheapestEdge = new Edge(new Point2D.Double(), Float.POSITIVE_INFINITY);
+		for(Edge e : edges.get(posOfCurrEdge)){
+			if(cheapestEdge.getCost() > e.getCost()){
+				cheapestEdge = e;
+			}
+		}	
+		return cheapestEdge;
+	}
+	
+	private ArrayList<Edge> shortestPath(int currPos, int targetPos){
+		
+		
+		return null;
 	}
 
 	@Override
 	public void doDebugStuff() {
 
-		drawObstacleGraph();
+		createGraph();
 
 		float testValue = 18;
 		float lengthMultiplier = 40;
