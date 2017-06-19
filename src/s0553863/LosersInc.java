@@ -20,12 +20,14 @@ public class LosersInc extends AI {
 	float maxAngularAcceleration = info.getMaxAngularAcceleration();
 	Polygon[] obstacles = info.getTrack().getObstacles();
 	private ArrayList<Line2D> obstacleLines;
-	private ArrayList<Point2D> points;
+	private ArrayList<Point2D> vertices;
+	private ArrayList<ArrayList<Edge>> edges;
 
 	public LosersInc(Info info) {
 		super(info);
 		obstacleLines = new ArrayList<Line2D>();
-		points = new ArrayList<Point2D>();
+		vertices = new ArrayList<Point2D>();
+		edges = new ArrayList<ArrayList<Edge>>();
 		getObstacleLines();
 	}
 
@@ -129,7 +131,7 @@ public class LosersInc extends AI {
 				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
 						new Point2D.Double(nextXpoint, nextYpoint)));
 				if (isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)) {
-					points.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
+					vertices.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
 				}
 			}
 			obstacleLines.add(new Line2D.Double(
@@ -174,9 +176,10 @@ public class LosersInc extends AI {
 
 	public void drawObstacleGraph() {
 
-		for (int l = 0; l < points.size() - 1; l++) {
-			for (int m = l; m < points.size(); m++) {
-				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
+		for (int l = 0; l < vertices.size() - 1; l++) {
+			edges.add(new ArrayList<Edge>());
+			for (int m = l; m < vertices.size(); m++) {
+				Line2D.Double currLine = new Line2D.Double(vertices.get(l), vertices.get(m));
 
 				boolean intersects = false;
 				for (Line2D line : obstacleLines) {
@@ -186,11 +189,21 @@ public class LosersInc extends AI {
 				}
 
 				if (!intersects) {
-					glBegin(GL_LINES);
-					glColor3f(1f, 1f, 0.5f); // yellowish
-					glVertex2d(points.get(l).getX(), points.get(l).getY());
-					glVertex2d(points.get(m).getX(), points.get(m).getY());
-					glEnd();
+					Point2D p1 = vertices.get(l);
+					Point2D p2 = vertices.get(m);
+					
+//					glBegin(GL_LINES);
+//					glColor3f(1f, 1f, 0.5f); // yellowish
+//					glVertex2d(p1.getX(), p1.getY());
+//					glVertex2d(p2.getX(), p2.getY());
+//					glEnd();
+					
+					float costFormular = (float) Math.sqrt(Math.pow(p2.getX() - p1.getX(), 2) + Math.pow((p2.getY() - p1.getY()), 2));
+					Vector2f cost = new Vector2f((float)(p2.getX() - p1.getX()), (float)(p2.getY() - p1.getY()));
+					
+					System.out.println("Formular:" + costFormular + " VecLength: " + cost.length());
+					
+					edges.get(l).add(new Edge(p2, cost.length()));
 				}
 			}
 		}
@@ -225,11 +238,11 @@ public class LosersInc extends AI {
 		glEnd();
 
 		// points with with small distance to obstacle
-		for (int i = 0; i < points.size(); i++) {
+		for (int i = 0; i < vertices.size(); i++) {
 			glColor3f(0, 1, 0); // green
 			glBegin(GL_POINTS);
 			glPointSize(44f);
-			glVertex2d(points.get(i).getX(), points.get(i).getY());
+			glVertex2d(vertices.get(i).getX(), vertices.get(i).getY());
 			glEnd();
 		}
 	}
