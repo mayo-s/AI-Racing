@@ -30,10 +30,14 @@ public class LosersInc extends AI {
 		points = new ArrayList<Point2D>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<ArrayList<Edge>>();
+		System.out.println("get obstacles");
 		getObstacleLines();
+		System.out.println("create graph");
 		createGraph();
+		System.out.println("fill vertices");
 		fillAllVertices();
-		findPath(0, 20);
+		System.out.println("find path");
+//		findPath(1, 20);
 	}
 
 	@Override
@@ -176,7 +180,7 @@ public class LosersInc extends AI {
 
 		for (int l = 0; l < points.size() - 1; l++) {
 			edges.add(new ArrayList<Edge>());
-			for (int m = l; m < points.size(); m++) {
+			for (int m = l + 1; m < points.size(); m++) {
 				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
 
 				boolean intersects = false;
@@ -190,7 +194,9 @@ public class LosersInc extends AI {
 					Point2D p1 = points.get(l);
 					Point2D p2 = points.get(m);
 					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) ((p2.getY() - p1.getY())));
-					System.out.println("cost length" + cost.length());
+//					System.out.println("x2: " + p2.getX() + " x1 " + p1.getX());
+//					System.out.println("y2: " + p2.getY() + " y1 " + p1.getY());
+//					System.out.println("cost length " + cost.length());
 					edges.get(l).add(new Edge(m, p2, cost.length()));
 				}
 			}
@@ -215,8 +221,10 @@ public class LosersInc extends AI {
 	}
 
 	private void fillAllVertices() {
+		System.out.println("size of points " + points.size());
 		for (int i = 0; i < points.size(); i++) {
 			vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
+//			System.out.println(vertices.get(i).getId());
 		}
 	}
 
@@ -231,9 +239,10 @@ public class LosersInc extends AI {
 			for (int i = 0; i < edges.get(currPos).size(); i++) {
 				Edge currEdge = edges.get(currPos).get(i);
 				int edgePos = findEdgePos(currEdge);
-			//	System.out.println("edgePos: " + edgePos + " currPos: " + currPos + " size list: " + edges.size() + " size edges: " + edges.get(currPos).size());
+//				System.out.println("edgePos: " + edgePos + " currPos: " + currPos + " size list: " + edges.size() + " size edges: " + edges.get(currPos).size());
 				if (!alreadyIn(edgePos, closed) && !alreadyIn(edgePos, open)) {
-//					System.out.println("cost " + currEdge.getCost());
+					System.out.println("Ding");
+					System.out.println("cost " + currEdge.getCost());
 					vertices.get(edgePos).setDistance(currEdge.getCost());
 					vertices.get(edgePos).setF();
 					vertices.get(edgePos).setNewPrevVertex(currPos);
@@ -273,10 +282,11 @@ public class LosersInc extends AI {
 	private boolean alreadyIn(int edgePos, ArrayList<Vertex> listToCheck){
 		
 		for(Vertex v : listToCheck){
-			if(edgePos == v.getId()) return false;
+//			System.out.println(edgePos + " < == > " + v.getId());
+			if(edgePos == v.getId()) return true;
 		}
-		
-		return true;
+//		System.out.println("already in = false" );
+		return false;
 	}
 
 	private int findEdgePos(Edge edge) {
