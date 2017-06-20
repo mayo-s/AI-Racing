@@ -8,8 +8,9 @@ public class Vertex {
 	double f;
 	int prevVertex;
 	
-	public Vertex(int id){
+	public Vertex(int id, double distance){
 		this.id = id;
+		this.g = distance;
 	}
 	
 	public int getId(){
