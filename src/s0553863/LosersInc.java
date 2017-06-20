@@ -31,6 +31,9 @@ public class LosersInc extends AI {
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<ArrayList<Edge>>();
 		getObstacleLines();
+		createGraph();
+		fillAllVertices();
+		findPath(0, 20);
 	}
 
 	@Override
@@ -186,8 +189,8 @@ public class LosersInc extends AI {
 				if (!intersects) {
 					Point2D p1 = points.get(l);
 					Point2D p2 = points.get(m);
-					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) (p2.getY() - p1.getY()));
-
+					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) ((p2.getY() - p1.getY())));
+					System.out.println("cost length" + cost.length());
 					edges.get(l).add(new Edge(m, p2, cost.length()));
 				}
 			}
@@ -228,24 +231,52 @@ public class LosersInc extends AI {
 			for (int i = 0; i < edges.get(currPos).size(); i++) {
 				Edge currEdge = edges.get(currPos).get(i);
 				int edgePos = findEdgePos(currEdge);
-				if (!alreadyIn(edgePos, open) || !alreadyIn(edgePos, closed)) {
-					vertices.get(edgePos).setDistance(edges.get(currPos).get(edgePos).getCost());
+			//	System.out.println("edgePos: " + edgePos + " currPos: " + currPos + " size list: " + edges.size() + " size edges: " + edges.get(currPos).size());
+				if (!alreadyIn(edgePos, closed) && !alreadyIn(edgePos, open)) {
+//					System.out.println("cost " + currEdge.getCost());
+					vertices.get(edgePos).setDistance(currEdge.getCost());
 					vertices.get(edgePos).setF();
 					vertices.get(edgePos).setNewPrevVertex(currPos);
 					open.add(vertices.get(edgePos));
 				}
-
 			}
+			closed.add(vertices.get(currPos));
+			open.remove(vertices.get(currPos));
+			currPos = findMinF(open);
+		}
+		finalPath(destination);
+	}
+	
+	private void finalPath(int destination){
+		int pos = destination;
+		while(vertices.get(pos).getPrevVertex() <= Integer.MAX_VALUE){
+			System.out.print(pos + " == > ");
+			pos = vertices.get(pos).getPrevVertex();
 		}
 	}
 
+	private int findMinF(ArrayList<Vertex> list){
+		double minValue = Double.POSITIVE_INFINITY;
+		int vertexId = 0;
+		for(Vertex v : list){
+//			System.out.println("for-minVal: " + minValue + " v.getF " + v.getF());
+			if(minValue > v.getF()){
+//				System.out.println("if-minVal: " + minValue + " v.getF " + v.getF());
+				minValue = v.getF();
+				vertexId = v.getId();
+			}
+		}
+//		System.out.println("return " + vertexId);
+		return vertexId;
+	}
+	
 	private boolean alreadyIn(int edgePos, ArrayList<Vertex> listToCheck){
 		
 		for(Vertex v : listToCheck){
-			if(edgePos == v.getId()) return true;
+			if(edgePos == v.getId()) return false;
 		}
 		
-		return false;
+		return true;
 	}
 
 	private int findEdgePos(Edge edge) {

@@ -6,7 +6,7 @@ public class Vertex {
 	double g; // distance
 	double h; // heuristic
 	double f;
-	int prevVertex;
+	int prevVertex = Integer.MAX_VALUE;
 	
 	public Vertex(int id, double distance){
 		this.id = id;
