@@ -36,10 +36,10 @@ public class LosersInc extends AI {
 		getObstacleLines();
 		System.out.println("create graph");
 		createGraph();
-//		System.out.println("fill vertices");
-//		fillAllVertices();
-//		System.out.println("find path");
-//		findPath(1, 20);
+		// System.out.println("fill vertices");
+		// fillAllVertices();
+		// System.out.println("find path");
+		// findPath(1, 20);
 	}
 
 	@Override
@@ -142,7 +142,8 @@ public class LosersInc extends AI {
 				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
 						new Point2D.Double(nextXpoint, nextYpoint)));
 				if (isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)) {
-					Point2D movedPoint = movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint);
+					Point2D movedPoint = movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint,
+							nextNextYpoint);
 					points.add(movedPoint);
 					vertices.add(new Vertex(vertices.size() - 1, movedPoint, Double.POSITIVE_INFINITY));
 				}
@@ -201,17 +202,23 @@ public class LosersInc extends AI {
 					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) ((p2.getY() - p1.getY())));
 					edges.get(l).add(new Edge(m, p2, cost.length()));
 					verticesAdjList.get(l).add(vertices.get(m));
-					verticesAdjList.get(l).get(verticesAdjList.get(l).size() - 1).setDistance(cost.length());
+					verticesAdjList.get(l).get(verticesAdjList.get(l).size() - 1).setCost(cost.length());
 				}
 			}
 		}
-		addStartingPos();
+		addPos(info.getX(), info.getY()); // add my very fisrt starting position
+		addPos(info.getCurrentCheckpoint().getX(), info.getCurrentCheckpoint().getY()); // add
+																						// first
+																						// checkpoint
+																						// to
+																						// reach
 	}
 
-	private void addStartingPos() {
+	private void addPos(double x, double y) {
+
 		edges.add(new ArrayList<Edge>());
 		verticesAdjList.add(new ArrayList<Vertex>());
-		Point2D startPos = new Point2D.Double(info.getX(), info.getY());
+		Point2D startPos = new Point2D.Double(x, y);
 		for (int i = 0; i < points.size(); i++) {
 
 			for (Line2D line : obstacleLines) {
@@ -221,23 +228,23 @@ public class LosersInc extends AI {
 							(float) (points.get(i).getY() - startPos.getY()));
 					edges.get(edges.size() - 1).add(new Edge(i, points.get(i), cost.length()));
 					verticesAdjList.get(verticesAdjList.size() - 1).add(vertices.get(i));
-					verticesAdjList.get(verticesAdjList.size() - 1).get(i).setDistance(cost.length());
-					
+					verticesAdjList.get(verticesAdjList.size() - 1).get(i).setCost(cost.length());
+
 				}
 			}
 		}
 	}
 
-//	private void fillAllVertices() {
-//		System.out.println("size of points " + points.size());
-//		for (int i = 0; i < points.size(); i++) {
-//			vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
-////			System.out.println(vertices.get(i).getId());
-//		}
-//	}
+	// private void fillAllVertices() {
+	// System.out.println("size of points " + points.size());
+	// for (int i = 0; i < points.size(); i++) {
+	// vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
+	//// System.out.println(vertices.get(i).getId());
+	// }
+	// }
 
 	private void findPath(int currPos, int destination) {
-		
+
 		ArrayList<Vertex> open = new ArrayList<Vertex>();
 		ArrayList<Vertex> closed = new ArrayList<Vertex>();
 		open.add(vertices.get(vertices.size() - 2));
@@ -248,11 +255,13 @@ public class LosersInc extends AI {
 			for (int i = 0; i < edges.get(currPos).size(); i++) {
 				Edge currEdge = edges.get(currPos).get(i);
 				int edgePos = findEdgePos(currEdge);
-//				System.out.println("edgePos: " + edgePos + " currPos: " + currPos + " size list: " + edges.size() + " size edges: " + edges.get(currPos).size());
+				// System.out.println("edgePos: " + edgePos + " currPos: " +
+				// currPos + " size list: " + edges.size() + " size edges: " +
+				// edges.get(currPos).size());
 				if (!alreadyIn(edgePos, closed) && !alreadyIn(edgePos, open)) {
 					System.out.println("Ding");
 					System.out.println("cost " + currEdge.getCost());
-					vertices.get(edgePos).setDistance(currEdge.getCost());
+					vertices.get(edgePos).setCost(currEdge.getCost());
 					vertices.get(edgePos).setF();
 					vertices.get(edgePos).setNewPrevVertex(currPos);
 					open.add(vertices.get(edgePos));
@@ -262,39 +271,42 @@ public class LosersInc extends AI {
 			open.remove(vertices.get(currPos));
 			currPos = findMinF(open);
 		}
-		finalPath(destination);
+		printFinalPath(destination);
 	}
-	
-	private void finalPath(int destination){
+
+	private void printFinalPath(int destination) {
 		int pos = destination;
-		while(vertices.get(pos).getPrevVertex() <= Integer.MAX_VALUE){
+		while (vertices.get(pos).getPrevVertex() < Integer.MAX_VALUE) {
 			System.out.print(pos + " == > ");
 			pos = vertices.get(pos).getPrevVertex();
 		}
 	}
 
-	private int findMinF(ArrayList<Vertex> list){
+	private int findMinF(ArrayList<Vertex> list) {
 		double minValue = Double.POSITIVE_INFINITY;
 		int vertexId = 0;
-		for(Vertex v : list){
-//			System.out.println("for-minVal: " + minValue + " v.getF " + v.getF());
-			if(minValue > v.getF()){
-//				System.out.println("if-minVal: " + minValue + " v.getF " + v.getF());
+		for (Vertex v : list) {
+			// System.out.println("for-minVal: " + minValue + " v.getF " +
+			// v.getF());
+			if (minValue > v.getF()) {
+				// System.out.println("if-minVal: " + minValue + " v.getF " +
+				// v.getF());
 				minValue = v.getF();
 				vertexId = v.getId();
 			}
 		}
-//		System.out.println("return " + vertexId);
+		// System.out.println("return " + vertexId);
 		return vertexId;
 	}
-	
-	private boolean alreadyIn(int edgePos, ArrayList<Vertex> listToCheck){
-		
-		for(Vertex v : listToCheck){
-//			System.out.println(edgePos + " < == > " + v.getId());
-			if(edgePos == v.getId()) return true;
+
+	private boolean alreadyIn(int edgePos, ArrayList<Vertex> listToCheck) {
+
+		for (Vertex v : listToCheck) {
+			// System.out.println(edgePos + " < == > " + v.getId());
+			if (edgePos == v.getId())
+				return true;
 		}
-//		System.out.println("already in = false" );
+		// System.out.println("already in = false" );
 		return false;
 	}
 
@@ -323,9 +335,24 @@ public class LosersInc extends AI {
 
 	@Override
 	public void doDebugStuff() {
-
 		createGraph();
+		drawPoints();
+		drawOrientationLines();
+		drawGraph();
+	}
 
+	private void drawPoints() {
+		// points with with small distance to obstacle
+		for (int i = 0; i < points.size(); i++) {
+			glColor3f(0, 1, 0); // green
+			glBegin(GL_POINTS);
+			glPointSize(44f);
+			glVertex2d(points.get(i).getX(), points.get(i).getY());
+			glEnd();
+		}
+	}
+
+	private void drawOrientationLines() {
 		float testValue = 18;
 		float lengthMultiplier = 40;
 
@@ -348,14 +375,22 @@ public class LosersInc extends AI {
 		glVertex2f((float) (info.getX() + Math.cos(info.getOrientation() - testValue) * lengthMultiplier),
 				(float) (info.getY() + Math.sin(info.getOrientation() - testValue) * lengthMultiplier));
 		glEnd();
+	}
 
-		// points with with small distance to obstacle
-		for (int i = 0; i < points.size(); i++) {
-			glColor3f(0, 1, 0); // green
-			glBegin(GL_POINTS);
-			glPointSize(44f);
-			glVertex2d(points.get(i).getX(), points.get(i).getY());
-			glEnd();
-		}
+	private void drawGraph() {
+
+//		for (int m = 0; m < verticesAdjList.size(); m++) {
+//			float p1x = (float) vertices.get(m).getPosition().getX();
+//			float p1y = (float) vertices.get(m).getPosition().getY();
+//			for (int n = 0; n < verticesAdjList.get(m).size(); n++) {
+//				float p2x = (float) verticesAdjList.get(m).get(n).getPosition().getX();
+//				float p2y = (float) verticesAdjList.get(m).get(n).getPosition().getY();
+//				glBegin(GL_LINES);
+//				glColor3f(0, 0, 0);
+//				glVertex2f(p1x, p1y);
+//				glVertex2f(p2x, p2y);
+//				glEnd();
+//			}
+//		}
 	}
 }

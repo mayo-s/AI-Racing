@@ -4,17 +4,16 @@ import java.awt.geom.Point2D;
 public class Vertex {
 
 	int id;
-	double g; // distance
+	double g; // cost
 	double h; // heuristic
 	double f;
 	int prevVertex = Integer.MAX_VALUE;
 	Point2D position;
 	
-	public Vertex(int id, Point2D position, double distance){
+	public Vertex(int id, Point2D position, double cost){
 		this.id = id;
 		this.position = position;
-		this.g = distance;
-		
+		this.g = cost;	
 	}
 	
 	public int getId(){
@@ -25,11 +24,11 @@ public class Vertex {
 		return position;
 	}
 
-	public void setDistance(double dist){
-		this.g = dist;
+	public void setCost(double cost){
+		this.g = cost;
 	}
 
-	public double getDistance(){
+	public double getCost(){
 		return g;
 	}
 	
