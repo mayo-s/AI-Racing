@@ -1,4 +1,5 @@
 package s0553863;
+import java.awt.geom.Point2D;
 
 public class Vertex {
 
@@ -7,10 +8,13 @@ public class Vertex {
 	double h; // heuristic
 	double f;
 	int prevVertex = Integer.MAX_VALUE;
+	Point2D position;
 	
-	public Vertex(int id, double distance){
+	public Vertex(int id, Point2D position, double distance){
 		this.id = id;
+		this.position = position;
 		this.g = distance;
+		
 	}
 	
 	public int getId(){

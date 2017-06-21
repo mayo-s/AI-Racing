@@ -23,6 +23,7 @@ public class LosersInc extends AI {
 	private ArrayList<Point2D> points;
 	private ArrayList<Vertex> vertices;
 	private ArrayList<ArrayList<Edge>> edges;
+	private ArrayList<ArrayList<Vertex>> verticesAdjList;
 
 	public LosersInc(Info info) {
 		super(info);
@@ -30,13 +31,14 @@ public class LosersInc extends AI {
 		points = new ArrayList<Point2D>();
 		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<ArrayList<Edge>>();
+		verticesAdjList = new ArrayList<ArrayList<Vertex>>();
 		System.out.println("get obstacles");
 		getObstacleLines();
 		System.out.println("create graph");
 		createGraph();
-		System.out.println("fill vertices");
-		fillAllVertices();
-		System.out.println("find path");
+//		System.out.println("fill vertices");
+//		fillAllVertices();
+//		System.out.println("find path");
 //		findPath(1, 20);
 	}
 
@@ -140,7 +142,9 @@ public class LosersInc extends AI {
 				obstacleLines.add(new Line2D.Double(new Point2D.Double(xpoint, ypoint),
 						new Point2D.Double(nextXpoint, nextYpoint)));
 				if (isLeftTurn(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint)) {
-					points.add(movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint));
+					Point2D movedPoint = movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint, nextNextYpoint);
+					points.add(movedPoint);
+					vertices.add(new Vertex(vertices.size() - 1, movedPoint, Double.POSITIVE_INFINITY));
 				}
 			}
 			obstacleLines.add(new Line2D.Double(
@@ -180,6 +184,7 @@ public class LosersInc extends AI {
 
 		for (int l = 0; l < points.size() - 1; l++) {
 			edges.add(new ArrayList<Edge>());
+			verticesAdjList.add(new ArrayList<Vertex>());
 			for (int m = l + 1; m < points.size(); m++) {
 				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
 
@@ -194,10 +199,9 @@ public class LosersInc extends AI {
 					Point2D p1 = points.get(l);
 					Point2D p2 = points.get(m);
 					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) ((p2.getY() - p1.getY())));
-//					System.out.println("x2: " + p2.getX() + " x1 " + p1.getX());
-//					System.out.println("y2: " + p2.getY() + " y1 " + p1.getY());
-//					System.out.println("cost length " + cost.length());
 					edges.get(l).add(new Edge(m, p2, cost.length()));
+					verticesAdjList.get(l).add(vertices.get(m));
+					verticesAdjList.get(l).get(verticesAdjList.get(l).size() - 1).setDistance(cost.length());
 				}
 			}
 		}
@@ -206,6 +210,7 @@ public class LosersInc extends AI {
 
 	private void addStartingPos() {
 		edges.add(new ArrayList<Edge>());
+		verticesAdjList.add(new ArrayList<Vertex>());
 		Point2D startPos = new Point2D.Double(info.getX(), info.getY());
 		for (int i = 0; i < points.size(); i++) {
 
@@ -215,23 +220,27 @@ public class LosersInc extends AI {
 					Vector2f cost = new Vector2f((float) (points.get(i).getX() - startPos.getX()),
 							(float) (points.get(i).getY() - startPos.getY()));
 					edges.get(edges.size() - 1).add(new Edge(i, points.get(i), cost.length()));
+					verticesAdjList.get(verticesAdjList.size() - 1).add(vertices.get(i));
+					verticesAdjList.get(verticesAdjList.size() - 1).get(i).setDistance(cost.length());
+					
 				}
 			}
 		}
 	}
 
-	private void fillAllVertices() {
-		System.out.println("size of points " + points.size());
-		for (int i = 0; i < points.size(); i++) {
-			vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
-//			System.out.println(vertices.get(i).getId());
-		}
-	}
+//	private void fillAllVertices() {
+//		System.out.println("size of points " + points.size());
+//		for (int i = 0; i < points.size(); i++) {
+//			vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
+////			System.out.println(vertices.get(i).getId());
+//		}
+//	}
 
 	private void findPath(int currPos, int destination) {
+		
 		ArrayList<Vertex> open = new ArrayList<Vertex>();
 		ArrayList<Vertex> closed = new ArrayList<Vertex>();
-		open.add(new Vertex(currPos, 0));
+		open.add(vertices.get(vertices.size() - 2));
 		fillHeuristics(destination);
 		open.get(0).setF();
 
