@@ -4,6 +4,8 @@ import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.PriorityQueue;
 // import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import org.lwjgl.util.vector.Vector2f;
@@ -21,25 +23,18 @@ public class LosersInc extends AI {
 	Polygon[] obstacles = info.getTrack().getObstacles();
 	private ArrayList<Line2D> obstacleLines;
 	private ArrayList<Point2D> points;
-	private ArrayList<Vertex> vertices;
 	private ArrayList<ArrayList<Edge>> edges;
-	private ArrayList<ArrayList<Vertex>> verticesAdjList;
+	private Point prevCP;
 
 	public LosersInc(Info info) {
 		super(info);
 		obstacleLines = new ArrayList<Line2D>();
 		points = new ArrayList<Point2D>();
-		vertices = new ArrayList<Vertex>();
 		edges = new ArrayList<ArrayList<Edge>>();
-		verticesAdjList = new ArrayList<ArrayList<Vertex>>();
 		System.out.println("get obstacles");
 		getObstacleLines();
 		System.out.println("create graph");
 		createGraph();
-		// System.out.println("fill vertices");
-		// fillAllVertices();
-		// System.out.println("find path");
-		// findPath(1, 20);
 	}
 
 	@Override
@@ -55,6 +50,11 @@ public class LosersInc extends AI {
 	@Override
 	public DriverAction update(boolean arg0) {
 		Point currentCheckpoint = info.getCurrentCheckpoint();
+
+		if (currentCheckpoint != prevCP) {
+			Vertex v = astar(edges.size() - 2, edges.size() - 1);
+			prevCP = currentCheckpoint;
+		}
 
 		float myCurrX = info.getX();
 		float myCurrY = info.getY();
@@ -145,7 +145,6 @@ public class LosersInc extends AI {
 					Point2D movedPoint = movePoint(xpoint, ypoint, nextXpoint, nextYpoint, nextNextXpoint,
 							nextNextYpoint);
 					points.add(movedPoint);
-					vertices.add(new Vertex(vertices.size() - 1, movedPoint, Double.POSITIVE_INFINITY));
 				}
 			}
 			obstacleLines.add(new Line2D.Double(
@@ -185,8 +184,7 @@ public class LosersInc extends AI {
 
 		for (int l = 0; l < points.size() - 1; l++) {
 			edges.add(new ArrayList<Edge>());
-			verticesAdjList.add(new ArrayList<Vertex>());
-			for (int m = l + 1; m < points.size(); m++) {
+			for (int m = 0; m < points.size(); m++) {
 				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
 
 				boolean intersects = false;
@@ -200,9 +198,7 @@ public class LosersInc extends AI {
 					Point2D p1 = points.get(l);
 					Point2D p2 = points.get(m);
 					Vector2f cost = new Vector2f((float) (p2.getX() - p1.getX()), (float) ((p2.getY() - p1.getY())));
-					edges.get(l).add(new Edge(m, p2, cost.length()));
-					verticesAdjList.get(l).add(vertices.get(m));
-					verticesAdjList.get(l).get(verticesAdjList.get(l).size() - 1).setCost(cost.length());
+					edges.get(l).add(new Edge(p2, cost.length()));
 				}
 			}
 		}
@@ -217,7 +213,6 @@ public class LosersInc extends AI {
 	private void addPos(double x, double y) {
 
 		edges.add(new ArrayList<Edge>());
-		verticesAdjList.add(new ArrayList<Vertex>());
 		Point2D startPos = new Point2D.Double(x, y);
 		for (int i = 0; i < points.size(); i++) {
 
@@ -226,111 +221,82 @@ public class LosersInc extends AI {
 				if (!currEdge.intersectsLine(line)) {
 					Vector2f cost = new Vector2f((float) (points.get(i).getX() - startPos.getX()),
 							(float) (points.get(i).getY() - startPos.getY()));
-					edges.get(edges.size() - 1).add(new Edge(i, points.get(i), cost.length()));
-					verticesAdjList.get(verticesAdjList.size() - 1).add(vertices.get(i));
-					verticesAdjList.get(verticesAdjList.size() - 1).get(i).setCost(cost.length());
-
+					edges.get(edges.size() - 1).add(new Edge(points.get(i), cost.length()));
 				}
 			}
 		}
 	}
 
-	// private void fillAllVertices() {
-	// System.out.println("size of points " + points.size());
-	// for (int i = 0; i < points.size(); i++) {
-	// vertices.add(new Vertex(i, Double.POSITIVE_INFINITY));
-	//// System.out.println(vertices.get(i).getId());
-	// }
-	// }
+	// Q ← { Startknoten: 0 }
+	// • Solange Knoten erreichbar [Q nicht leer]
+	//  v ← Entferne Knoten mit kleinsten Kosten k+h(v)
+	// aus Q
+	//  Für alle von v ausgehenden Kanten (v, n)
+	// • Falls n nicht fertig [in Liste F]
+	//  Falls n bisher nicht erreichbar [nicht in Q]
+	// • n ist erreichbar mit Kosten ∞ [n zu Q hinzufügen]
+	//  Falls k + Kantengewicht(v,n) < Kosten von n in Q?
+	// • Kosten von n in Q ← k + Kantengewicht(v,n)
+	// • Setze v als Vorgänger von n
+	//  v ist fertig [v zu F hinzufügen]
 
-	private void findPath(int currPos, int destination) {
+	private Vertex astar(int start, int destination) {
+		PriorityQueue<Vertex> q = new PriorityQueue<>();
+		HashSet<Vertex> f = new HashSet<Vertex>();
+		Vertex finalVertex = null;
 
-		ArrayList<Vertex> open = new ArrayList<Vertex>();
-		ArrayList<Vertex> closed = new ArrayList<Vertex>();
-		open.add(vertices.get(vertices.size() - 2));
-		fillHeuristics(destination);
-		open.get(0).setF();
-
-		while (currPos != destination) {
-			for (int i = 0; i < edges.get(currPos).size(); i++) {
-				Edge currEdge = edges.get(currPos).get(i);
-				int edgePos = findEdgePos(currEdge);
-				// System.out.println("edgePos: " + edgePos + " currPos: " +
-				// currPos + " size list: " + edges.size() + " size edges: " +
-				// edges.get(currPos).size());
-				if (!alreadyIn(edgePos, closed) && !alreadyIn(edgePos, open)) {
-					System.out.println("Ding");
-					System.out.println("cost " + currEdge.getCost());
-					vertices.get(edgePos).setCost(currEdge.getCost());
-					vertices.get(edgePos).setF();
-					vertices.get(edgePos).setNewPrevVertex(currPos);
-					open.add(vertices.get(edgePos));
+		q.add(new Vertex(start, 0, start));
+		while (!q.isEmpty()) {
+			Vertex v = q.poll();
+			for (Edge edg : edges.get(v.vertex)) {
+				boolean inF = false;
+				for (Vertex such : f) {
+					if (such.vertex == getTargetInt(edg.getTarget())) {
+						inF = true;
+						break;
+					}
 				}
+				if (!inF) {
+					Vertex nInQ = null;
+					for (Vertex such : q) {
+						if (such.vertex == getTargetInt(edg.getTarget())) {
+							nInQ = such;
+							break;
+						}
+					}
+					if (nInQ == null) {
+						nInQ = new Vertex(getTargetInt(edg.getTarget()), Float.POSITIVE_INFINITY, v.vertex);
+						q.add(nInQ);
+					}
+					if (v.cost + edg.getCost() < nInQ.cost) {
+						nInQ.cost = v.cost + edg.getCost();
+						nInQ.preVertex = v.vertex;
+					}
+				}
+
 			}
-			closed.add(vertices.get(currPos));
-			open.remove(vertices.get(currPos));
-			currPos = findMinF(open);
+			if (v.vertex == destination)
+				finalVertex = v;
+			f.add(v);
 		}
-		printFinalPath(destination);
+		return finalVertex;
 	}
 
-	private void printFinalPath(int destination) {
-		int pos = destination;
-		while (vertices.get(pos).getPrevVertex() < Integer.MAX_VALUE) {
-			System.out.print(pos + " == > ");
-			pos = vertices.get(pos).getPrevVertex();
-		}
-	}
-
-	private int findMinF(ArrayList<Vertex> list) {
-		double minValue = Double.POSITIVE_INFINITY;
-		int vertexId = 0;
-		for (Vertex v : list) {
-			// System.out.println("for-minVal: " + minValue + " v.getF " +
-			// v.getF());
-			if (minValue > v.getF()) {
-				// System.out.println("if-minVal: " + minValue + " v.getF " +
-				// v.getF());
-				minValue = v.getF();
-				vertexId = v.getId();
-			}
-		}
-		// System.out.println("return " + vertexId);
-		return vertexId;
-	}
-
-	private boolean alreadyIn(int edgePos, ArrayList<Vertex> listToCheck) {
-
-		for (Vertex v : listToCheck) {
-			// System.out.println(edgePos + " < == > " + v.getId());
-			if (edgePos == v.getId())
-				return true;
-		}
-		// System.out.println("already in = false" );
-		return false;
-	}
-
-	private int findEdgePos(Edge edge) {
-		Point2D point = edge.getTarget();
-		int pointPos = 0;
-		for (; pointPos < points.size(); pointPos++) {
-			if (point == points.get(pointPos)) {
+	public int getTargetInt(Point2D point) {
+		double pointX = point.getX();
+		double pointY =  point.getY();
+		int position = 0;
+		for (int i = 0; i < points.size(); i++) {
+			double compareX = points.get(i).getX();
+			double compareY = points.get(i).getY();
+			if (pointX == compareX && pointY == compareY) {
+				position = i;
+				System.out.println("(edgetarget) " + pointX + " " + pointY + " is in pointsList " + position + " ("
+						+ points.get(position).getX() + " " + points.get(position).getY() + ")");
 				break;
 			}
 		}
-		return pointPos;
-	}
-
-	private float calcHeuristic(int start, int dest) {
-		float heuristic = new Vector2f((float) (points.get(dest).getX() - points.get(start).getX()),
-				(float) (points.get(dest).getY() - points.get(start).getY())).length();
-		return heuristic;
-	}
-
-	private void fillHeuristics(int dest) {
-		for (int i = 0; i < edges.size(); i++) {
-			vertices.get(i).setHeuristic(calcHeuristic(i, dest));
-		}
+		return position;
 	}
 
 	@Override
@@ -379,18 +345,20 @@ public class LosersInc extends AI {
 
 	private void drawGraph() {
 
-//		for (int m = 0; m < verticesAdjList.size(); m++) {
-//			float p1x = (float) vertices.get(m).getPosition().getX();
-//			float p1y = (float) vertices.get(m).getPosition().getY();
-//			for (int n = 0; n < verticesAdjList.get(m).size(); n++) {
-//				float p2x = (float) verticesAdjList.get(m).get(n).getPosition().getX();
-//				float p2y = (float) verticesAdjList.get(m).get(n).getPosition().getY();
-//				glBegin(GL_LINES);
-//				glColor3f(0, 0, 0);
-//				glVertex2f(p1x, p1y);
-//				glVertex2f(p2x, p2y);
-//				glEnd();
-//			}
-//		}
+		// for (int m = 0; m < verticesAdjList.size(); m++) {
+		// float p1x = (float) vertices.get(m).getPosition().getX();
+		// float p1y = (float) vertices.get(m).getPosition().getY();
+		// for (int n = 0; n < verticesAdjList.get(m).size(); n++) {
+		// float p2x = (float)
+		// verticesAdjList.get(m).get(n).getPosition().getX();
+		// float p2y = (float)
+		// verticesAdjList.get(m).get(n).getPosition().getY();
+		// glBegin(GL_LINES);
+		// glColor3f(0, 0, 0);
+		// glVertex2f(p1x, p1y);
+		// glVertex2f(p2x, p2y);
+		// glEnd();
+		// }
+		// }
 	}
 }
