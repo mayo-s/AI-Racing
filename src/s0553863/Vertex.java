@@ -20,6 +20,10 @@ public class Vertex {
 	public int getId(){
 		return id;
 	}
+	
+	public Point2D getPosition(){
+		return position;
+	}
 
 	public void setDistance(double dist){
 		this.g = dist;
