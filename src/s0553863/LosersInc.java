@@ -44,7 +44,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 	@Override
 	public String getName() {
-		return "Loser Inc";
+		return "Numero Uno";
 	}
 
 	@Override
@@ -146,7 +146,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		return new DriverAction(throttle, steering);
 	}
 
-	void addPoints() {
+	private void addPoints() {
 
 		for (int i = 0; i < obstacles.length; i++) {
 			int pointCountInObstacle = obstacles[i].npoints;
@@ -169,7 +169,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		addObstacleLines();
 	}
 
-	void addObstacleLines() {
+	private void addObstacleLines() {
 
 		for (int i = 0; i < obstacles.length; i++) {
 			int pointCountInObstacle = obstacles[i].npoints;
@@ -210,14 +210,14 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		findPath((edges.size() - 1), (edges.size() - 2));
 	}
 
-	float getVectorLength(Point2D p1, Point2D p2) {
+	private float getVectorLength(Point2D p1, Point2D p2) {
 		float length = 0;
 		Vector2f vector = new Vector2f((float) p2.getX() - (float) (p1.getX()), (float) p2.getY() - (float) p1.getY());
 		length = vector.length();
 		return length;
 	}
 
-	Vertex findPath(int start, int destination) {
+	private Vertex findPath(int start, int destination) {
 		// open
 		PriorityQueue<Vertex> q = new PriorityQueue<>();
 		// closed
@@ -263,7 +263,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	}
 
 	// find previous Vertex in open or closed
-	void preVertex(Vertex v, PriorityQueue<Vertex> q, Set<Vertex> f) {
+	private void preVertex(Vertex v, PriorityQueue<Vertex> q, Set<Vertex> f) {
 		while (v.vertex != v.preVertex) {
 			path.add(points.get(v.preVertex));
 			boolean found = false;
@@ -318,7 +318,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		}
 	}
 
-	public int getTargetInt(Point2D point) {
+	private int getTargetInt(Point2D point) {
 		double pointX = point.getX();
 		double pointY = point.getY();
 		int position = 0;
@@ -393,14 +393,13 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		glEnd();
 	}
 
-	void drawGraph() {
+	private void drawGraph() {
 
 		glBegin(GL_LINES);
 		glColor3f(0, 0, 0);
 		for (Line2D line : linesToDraw) {
 			glVertex2d(line.getX1(), line.getY1());
 			glVertex2d(line.getX2(), line.getY2());
-
 		}
 		glEnd();
 	}
