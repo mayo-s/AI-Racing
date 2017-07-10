@@ -28,6 +28,8 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	ArrayList<Point2D> path;
 	Point2D prevCheckpoint;
 	Point2D finalCheckpoint;
+	int lastCPx;
+	int lastCPy;
 
 	public LosersInc(Info info) {
 		super(info);
@@ -44,6 +46,9 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		prevCheckpoint = info.getCurrentCheckpoint();
 		finalCheckpoint = info.getCurrentCheckpoint();
 		path = new ArrayList<Point2D>();
+		lastCPx = info.getCurrentCheckpoint().x;
+		lastCPy = info.getCurrentCheckpoint().y;
+		
 
 		addPoints();
 	}
@@ -59,9 +64,17 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	}
 
 	@Override
-	public DriverAction update(boolean arg0) {
-		if (arg0) {
+	public DriverAction update(boolean zurückgesetztNachUnfall) {
+		if (zurückgesetztNachUnfall) {
 			nextCheckpoint();
+			System.out.println("new checkpoint");
+		}
+		
+		if(info.getCurrentCheckpoint().x != lastCPx || info.getCurrentCheckpoint().y != lastCPy){
+			nextCheckpoint();
+			lastCPx = info.getCurrentCheckpoint().x;
+			lastCPy = info.getCurrentCheckpoint().y;
+			System.out.println("CP changed");
 		}
 
 		float myCurrentX = info.getX();
@@ -86,12 +99,9 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		float distance2CP = (float) Math.sqrt(Math.pow(orientationX, 2) + Math.pow(orientationY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
-		if (getVectorLength(myPos, currentCheckpoint) <= 10 && currentCheckpoint != finalCheckpoint) {
+		if (getVectorLength(myPos, currentCheckpoint) <= 10) {
 			System.out.println("removing");
 			path.remove(0);
-		} else if (getVectorLength(myPos, currentCheckpoint) <= 5 && currentCheckpoint == finalCheckpoint) {
-			System.out.println("checkpoint changed");
-			nextCheckpoint();
 		}
 
 		if (angleBetweenOrientations > Math.PI)
@@ -157,10 +167,10 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 		pointsObstacle.add(new Point2D.Double(info.getX(), info.getY()));
 		pointsObstacle.add(info.getCurrentCheckpoint());
-		
+
 		this.linesObstacles = addLines(obstacles);
 		this.linesSlowZones = addLines(slowZones);
-		
+
 		saveLinesToDraw();
 	}
 
@@ -179,8 +189,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 								polygons[i].ypoints[(j + 1) % pointCountInObstacle],
 								polygons[i].xpoints[(j + 2) % pointCountInObstacle],
 								polygons[i].ypoints[(j + 2) % pointCountInObstacle]));
-					}
-					else{
+					} else {
 						pointsSlowZones.add(new Point2D.Double(polygons[i].xpoints[j], polygons[i].ypoints[j]));
 					}
 				}
@@ -236,10 +245,10 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 				if (intersects == false) {
 					if (!linesToDraw.contains(currLine)) {
 						linesToDraw.add(currLine);
-						Vector2f cost = new Vector2f((float) (pointsObstacle.get(m).getX() - pointsObstacle.get(l).getX()),
+						Vector2f cost = new Vector2f(
+								(float) (pointsObstacle.get(m).getX() - pointsObstacle.get(l).getX()),
 								(float) (pointsObstacle.get(m).getY() - pointsObstacle.get(l).getY()));
 						edges.get(l).add(new Edge(cost.length(), pointsObstacle.get(m)));
-						// System.out.println("point " + l + " tooooo " + m);
 					}
 				}
 			}
@@ -340,7 +349,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		edges = new ArrayList<ArrayList<Edge>>();
 		prevCheckpoint = info.getCurrentCheckpoint();
 		finalCheckpoint = info.getCurrentCheckpoint();
-		path = new ArrayList<Point2D>();
+		this.path = new ArrayList<Point2D>();
 
 		addPoints();
 	}
@@ -371,7 +380,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	}
 
 	private void getSlowZones() {
-		
+
 	}
 
 	@Override
