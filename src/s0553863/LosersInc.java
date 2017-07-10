@@ -99,7 +99,8 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		float distance2CP = (float) Math.sqrt(Math.pow(orientationX, 2) + Math.pow(orientationY, 2));
 		float currVelocity = (float) Math.sqrt(Math.pow(info.getVelocity().x, 2) + Math.pow(info.getVelocity().y, 2));
 
-		if (getVectorLength(myPos, currentCheckpoint) <= 10) {
+		
+		if (getVectorLength(myPos, currentCheckpoint) <= 10 && currentCheckpoint != finalCheckpoint) {
 			System.out.println("removing");
 			path.remove(0);
 		}
@@ -387,7 +388,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	public void doDebugStuff() {
 		drawPoints();
 		drawOrientationLines();
-		drawGraph();
+	//	drawGraph();
 	}
 
 	private void drawPoints() {
