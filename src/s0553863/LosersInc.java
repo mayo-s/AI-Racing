@@ -178,9 +178,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		this.linesSlowZones = addLines(slowZones);
 		this.linesFastZones = addLines(fastZones);
 
-		saveLinesToDraw(pointsObstacle, linesObstacles, 1, false);
-		saveLinesToDraw(pointsSlowZones, linesSlowZones, 10, true);
-		saveLinesToDraw(pointsFastZones, linesFastZones, 0.3f, true);
+		saveLinesToDraw();
 	}
 
 	private ArrayList<Point2D> polygonPoints(Polygon[] polygons, boolean move) {
@@ -241,28 +239,48 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		return lines;
 	}
 
-	private void saveLinesToDraw(ArrayList<Point2D> points, ArrayList<Line2D> lines, float costMultiplier,
-			boolean consider) {
-		for (int l = 0; l < points.size(); l++) {
+	private void saveLinesToDraw() {
+		for (int l = 0; l < pointsObstacle.size(); l++) {
 			edges.add(new ArrayList<Edge>());
-			for (int m = 0; m < points.size(); m++) {
-				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
+			for (int m = 0; m < pointsObstacle.size(); m++) {
+				float costMultiplier = 1;
+				Line2D.Double currLine = new Line2D.Double(pointsObstacle.get(l), pointsObstacle.get(m));
 				boolean intersects = false;
-				for (Line2D line : lines) {
+				for (Line2D line : linesObstacles) {
 					if (currLine.intersectsLine(line)) {
 						linesNotToDraw.add(currLine);
 						intersects = true;
 						break;
 					}
 				}
+				if (!intersects) {
+					for (Line2D line : linesSlowZones) {
+						if (currLine.intersectsLine(line)) {
+							linesNotToDraw.add(currLine);
+							costMultiplier = costMultiplier * 10;
+							// intersects = true; // to ignore slow zones
+							break;
+						}
+					}
+				}
+				if (!intersects) {
+					for (Line2D line : linesFastZones) {
+						if (currLine.intersectsLine(line)) {
+							linesNotToDraw.add(currLine);
+							costMultiplier = costMultiplier * 0.4f;
+							break;
+						}
+					}
+				}
 
-				if (!intersects && consider) {
+				if (!intersects) {
 					if (!linesToDraw.contains(currLine)) {
 						linesToDraw.add(currLine);
 						float cost = costMultiplier
-								* (new Vector2f((float) (points.get(m).getX() - points.get(l).getX()),
-										(float) (points.get(m).getY() - points.get(l).getY()))).length();
-						edges.get(l).add(new Edge(cost, points.get(m)));
+								* (new Vector2f((float) (pointsObstacle.get(m).getX() - pointsObstacle.get(l).getX()),
+										(float) (pointsObstacle.get(m).getY() - pointsObstacle.get(l).getY())))
+												.length();
+						edges.get(l).add(new Edge(cost, pointsObstacle.get(m)));
 					}
 				}
 			}
