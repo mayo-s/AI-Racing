@@ -16,12 +16,15 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 	Polygon[] obstacles;
 	Polygon[] slowZones;
+	Polygon[] fastZones;
 	private ArrayList<Line2D> linesObstacles;
 	private ArrayList<Line2D> linesSlowZones;
+	private ArrayList<Line2D> linesFastZones;
 	private ArrayList<Line2D> linesToDraw;
 	private ArrayList<Line2D> linesNotToDraw;
 	public ArrayList<Point2D> pointsObstacle;
 	public ArrayList<Point2D> pointsSlowZones;
+	private ArrayList<Point2D> pointsFastZones;
 	private ArrayList<ArrayList<Edge>> edges;
 	ArrayList<Point2D> open;
 	ArrayList<Point2D> closed;
@@ -36,10 +39,13 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 		obstacles = info.getTrack().getObstacles();
 		slowZones = info.getTrack().getSlowZones();
-		linesObstacles = new ArrayList<Line2D>();
-		linesSlowZones = new ArrayList<Line2D>();
+		fastZones = info.getTrack().getFastZones();
 		pointsObstacle = new ArrayList<Point2D>();
 		pointsSlowZones = new ArrayList<Point2D>();
+		pointsFastZones = new ArrayList<Point2D>();
+		linesObstacles = new ArrayList<Line2D>();
+		linesSlowZones = new ArrayList<Line2D>();
+		linesFastZones = new ArrayList<Line2D>();
 		linesToDraw = new ArrayList<Line2D>();
 		linesNotToDraw = new ArrayList<Line2D>();
 		edges = new ArrayList<ArrayList<Edge>>();
@@ -66,7 +72,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 	public DriverAction update(boolean carReseted) {
 		if (carReseted) {
 			nextCheckpoint();
-			System.out.println("new checkpoint");
+			System.out.println("path recalculated");
 		}
 
 		if (info.getCurrentCheckpoint().x != lastCPx || info.getCurrentCheckpoint().y != lastCPy) {
@@ -108,7 +114,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		if (angleBetweenOrientations < -Math.PI)
 			angleBetweenOrientations += 2 * Math.PI;
 
-		float lengthMultiplier = 40;
+		float lengthMultiplier = 20;
 		float angleValue = 18;
 
 		Point2D.Double forward = new Point2D.Double(
@@ -161,19 +167,23 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 	private void addPoints() {
 
-		polygonPoints(obstacles, true);
-		polygonPoints(slowZones, false);
+		pointsObstacle = polygonPoints(obstacles, true);
+		pointsSlowZones = polygonPoints(slowZones, false);
+		pointsFastZones = polygonPoints(fastZones, false);
 
 		pointsObstacle.add(new Point2D.Double(info.getX(), info.getY()));
 		pointsObstacle.add(info.getCurrentCheckpoint());
 
 		this.linesObstacles = addLines(obstacles);
 		this.linesSlowZones = addLines(slowZones);
+		this.linesFastZones = addLines(fastZones);
 
 		saveLinesToDraw();
 	}
 
-	private void polygonPoints(Polygon[] polygons, boolean move) {
+	private ArrayList<Point2D> polygonPoints(Polygon[] polygons, boolean move) {
+
+		ArrayList<Point2D> currPoints = new ArrayList<Point2D>();
 		for (int i = 0; i < polygons.length; i++) {
 			int pointCountInObstacle = polygons[i].npoints;
 			for (int j = 0; j < pointCountInObstacle; j++) {
@@ -183,17 +193,18 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 						polygons[i].xpoints[(j + 2) % pointCountInObstacle],
 						polygons[i].ypoints[(j + 2) % pointCountInObstacle])) {
 					if (move) {
-						pointsObstacle.add(movePoint(polygons[i].xpoints[j], polygons[i].ypoints[j],
+						currPoints.add(movePoint(polygons[i].xpoints[j], polygons[i].ypoints[j],
 								polygons[i].xpoints[(j + 1) % pointCountInObstacle],
 								polygons[i].ypoints[(j + 1) % pointCountInObstacle],
 								polygons[i].xpoints[(j + 2) % pointCountInObstacle],
 								polygons[i].ypoints[(j + 2) % pointCountInObstacle]));
 					} else {
-						pointsSlowZones.add(new Point2D.Double(polygons[i].xpoints[j], polygons[i].ypoints[j]));
+						currPoints.add(new Point2D.Double(polygons[i].xpoints[j], polygons[i].ypoints[j]));
 					}
 				}
 			}
 		}
+		return currPoints;
 	}
 
 	private Point2D movePoint(int x0, int y0, int x1, int y1, int x2, int y2) {
@@ -232,6 +243,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		for (int l = 0; l < pointsObstacle.size(); l++) {
 			edges.add(new ArrayList<Edge>());
 			for (int m = 0; m < pointsObstacle.size(); m++) {
+				float costMultiplier = 1;
 				Line2D.Double currLine = new Line2D.Double(pointsObstacle.get(l), pointsObstacle.get(m));
 				boolean intersects = false;
 				for (Line2D line : linesObstacles) {
@@ -241,21 +253,33 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 						break;
 					}
 				}
-				for (Line2D line : linesSlowZones) {
-					if (currLine.intersectsLine(line)) {
-						linesNotToDraw.add(currLine);
-						intersects = true;
-						break;
+				if (!intersects) {
+					for (Line2D line : linesSlowZones) {
+						if (currLine.intersectsLine(line)) {
+							linesNotToDraw.add(currLine);
+							costMultiplier = costMultiplier * 10;
+//							intersects = true; // to ignore slow zones
+							break;
+						}
 					}
-				}				
-				
-				if (intersects == false) {
+				}
+				if (!intersects) {
+					for (Line2D line : linesFastZones) {
+						if (currLine.intersectsLine(line)) {
+							linesNotToDraw.add(currLine);
+							costMultiplier = costMultiplier * 0.5f;
+							break;
+						}
+					}
+				}
+
+				if (!intersects) {
 					if (!linesToDraw.contains(currLine)) {
 						linesToDraw.add(currLine);
-						Vector2f cost = new Vector2f(
+						float cost = costMultiplier * (new Vector2f(
 								(float) (pointsObstacle.get(m).getX() - pointsObstacle.get(l).getX()),
-								(float) (pointsObstacle.get(m).getY() - pointsObstacle.get(l).getY()));
-						edges.get(l).add(new Edge(cost.length(), pointsObstacle.get(m)));
+								(float) (pointsObstacle.get(m).getY() - pointsObstacle.get(l).getY()))).length();
+						edges.get(l).add(new Edge(cost, pointsObstacle.get(m)));
 					}
 				}
 			}
@@ -263,60 +287,6 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		findPath((edges.size() - 1), (edges.size() - 2));
 	}
 	
-//	private void saveLinesToDraw() {
-//		for (int l = 0; l < points.size(); l++) {
-//			edges.add(new ArrayList<Edge>());
-//			for (int m = 0; m < points.size(); m++) {
-//				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
-//				boolean intersects = false;
-//				for (Line2D line : lines) {
-//					if (currLine.intersectsLine(line)) {
-//						linesNotToDraw.add(currLine);
-//						intersects = true;
-//						break;
-//					}
-//				}
-//				if (intersects == false) {
-//					if (!linesToDraw.contains(currLine)) {
-//						linesToDraw.add(currLine);
-//						boolean intersects2 = false;
-//						for (int x = 0; x < slowLines.size(); x++) {
-//							if (currLine.intersectsLine(slowLines.get(x))) {
-//								Vector2f cost = new Vector2f((float) (points.get(m).getX() - points.get(l).getX()),
-//										(float) (points.get(m).getY() - points.get(l).getY()));
-//								edges.get(l).add(new Edge(cost.length() * 9, points.get(m)));
-//								intersects2 = true;
-//								break;
-//							}
-//						}
-//
-//						if (intersects2 == false) {
-//							boolean intersects3 = false;
-//							for (int y = 0; y < fastLines.size(); y++) {
-//								if (currLine.intersectsLine(fastLines.get(y))) {
-//									Vector2f cost = new Vector2f((float) (points.get(m).getX() - points.get(l).getX()),
-//											(float) (points.get(m).getY() - points.get(l).getY()));
-//									edges.get(l).add(new Edge(cost.length() * 0.8f, points.get(m)));
-//									intersects3 = true;
-//									break;
-//								}
-//							}
-//							if (intersects3 == false) {
-//								Vector2f cost = new Vector2f((float) (points.get(m).getX() - points.get(l).getX()),
-//										(float) (points.get(m).getY() - points.get(l).getY()));
-//								edges.get(l).add(new Edge(cost.length(), points.get(m)));
-//							}
-//
-//						}
-//					}
-//
-//				}
-//			}
-//
-//		}
-//		x((edges.size() - 1), (edges.size() - 2));
-//	}
-
 	private float getVectorLength(Point2D p1, Point2D p2) {
 		float length = 0;
 		Vector2f vector = new Vector2f((float) p2.getX() - (float) (p1.getX()), (float) p2.getY() - (float) p1.getY());
@@ -440,10 +410,6 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		return position;
 	}
 
-	private void getSlowZones() {
-
-	}
-
 	@Override
 	public void doDebugStuff() {
 		drawPoints();
@@ -468,17 +434,29 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 			glVertex2d(pointsSlowZones.get(i).getX(), pointsSlowZones.get(i).getY());
 			glEnd();
 		}
+		// fast zone edge points
+				for (int i = 0; i < pointsFastZones.size(); i++) {
+					glColor3f(0.5f, 0.5f, 0.5f); // purple
+					glBegin(GL_POINTS);
+					glPointSize(44f);
+					glVertex2d(pointsFastZones.get(i).getX(), pointsFastZones.get(i).getY());
+					glEnd();
+				}
 	}
 
 	private void drawOrientationLines() {
-		float testValue = 18;
-		float lengthMultiplier = 40;
+		float testValue = 15;
+		float lengthMultiplier = 20;
 
 		glBegin(GL_LINES);
 		// orientation to next CP (green)
 		glColor3f(0, 1, 0);
 		glVertex2f(info.getX(), info.getY());
 		glVertex2f((float) info.getCurrentCheckpoint().getX(), (float) info.getCurrentCheckpoint().getY());
+		// orientation to next path point (green)
+				glColor3f(0, 0.7f, 0);
+				glVertex2f(info.getX(), info.getY());
+				glVertex2f((float) path.get(0).getX(), (float) path.get(0).getY());
 		// vector for current orientation (blue)
 		glColor3f(0, 0, 1);
 		glVertex2f(info.getX(), info.getY());
