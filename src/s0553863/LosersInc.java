@@ -60,7 +60,7 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 
 	@Override
 	public String getName() {
-		return "Numero Uno";
+		return "Lenz Mobil - Reloaded";
 	}
 
 	@Override
@@ -138,12 +138,12 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		float throttle = maxVelocity;
 		float steering = 0;
 
-		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 4) {
+		if (Math.abs(angleBetweenOrientations) >= tolerance && Math.abs(angleBetweenOrientations) <= Math.PI / 5) {
 			throttle = 1f;
 			wishAngularVelocity = (angleBetweenOrientations * maxAngularVelocity / 0.4f);
 		}
 
-		else if (Math.abs(angleBetweenOrientations) > Math.PI / 4) {
+		else if (Math.abs(angleBetweenOrientations) > Math.PI / 5) {
 			throttle = 1;
 			wishAngularVelocity = Math.signum(angleBetweenOrientations) * maxAngularVelocity;
 		}
@@ -178,7 +178,9 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		this.linesSlowZones = addLines(slowZones);
 		this.linesFastZones = addLines(fastZones);
 
-		saveLinesToDraw();
+		saveLinesToDraw(pointsObstacle, linesObstacles, 1, false);
+		saveLinesToDraw(pointsSlowZones, linesSlowZones, 10, true);
+		saveLinesToDraw(pointsFastZones, linesFastZones, 0.3f, true);
 	}
 
 	private ArrayList<Point2D> polygonPoints(Polygon[] polygons, boolean move) {
@@ -239,48 +241,28 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 		return lines;
 	}
 
-	private void saveLinesToDraw() {
-		for (int l = 0; l < pointsObstacle.size(); l++) {
+	private void saveLinesToDraw(ArrayList<Point2D> points, ArrayList<Line2D> lines, float costMultiplier,
+			boolean consider) {
+		for (int l = 0; l < points.size(); l++) {
 			edges.add(new ArrayList<Edge>());
-			for (int m = 0; m < pointsObstacle.size(); m++) {
-				float costMultiplier = 1;
-				Line2D.Double currLine = new Line2D.Double(pointsObstacle.get(l), pointsObstacle.get(m));
+			for (int m = 0; m < points.size(); m++) {
+				Line2D.Double currLine = new Line2D.Double(points.get(l), points.get(m));
 				boolean intersects = false;
-				for (Line2D line : linesObstacles) {
+				for (Line2D line : lines) {
 					if (currLine.intersectsLine(line)) {
 						linesNotToDraw.add(currLine);
 						intersects = true;
 						break;
 					}
 				}
-				if (!intersects) {
-					for (Line2D line : linesSlowZones) {
-						if (currLine.intersectsLine(line)) {
-							linesNotToDraw.add(currLine);
-							costMultiplier = costMultiplier * 10;
-							// intersects = true; // to ignore slow zones
-							break;
-						}
-					}
-				}
-				if (!intersects) {
-					for (Line2D line : linesFastZones) {
-						if (currLine.intersectsLine(line)) {
-							linesNotToDraw.add(currLine);
-							costMultiplier = costMultiplier * 0.5f;
-							break;
-						}
-					}
-				}
 
-				if (!intersects) {
+				if (!intersects && consider) {
 					if (!linesToDraw.contains(currLine)) {
 						linesToDraw.add(currLine);
 						float cost = costMultiplier
-								* (new Vector2f((float) (pointsObstacle.get(m).getX() - pointsObstacle.get(l).getX()),
-										(float) (pointsObstacle.get(m).getY() - pointsObstacle.get(l).getY())))
-												.length();
-						edges.get(l).add(new Edge(cost, pointsObstacle.get(m)));
+								* (new Vector2f((float) (points.get(m).getX() - points.get(l).getX()),
+										(float) (points.get(m).getY() - points.get(l).getY()))).length();
+						edges.get(l).add(new Edge(cost, points.get(m)));
 					}
 				}
 			}
@@ -332,11 +314,6 @@ public class LosersInc extends lenz.htw.ai4g.ai.AI {
 						nInQ.cost = v.cost + edg.getCost() + cost.length();
 						nInQ.preVertex = v.vertex;
 					}
-
-					// if (v.cost + edg.getCost() < nInQ.cost) {
-					// nInQ.cost = v.cost + edg.getCost();
-					// nInQ.preVertex = v.vertex;
-					// }
 				}
 			}
 			if (v.vertex == destination) {
